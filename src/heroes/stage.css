@@ -1,0 +1,77 @@
+/* ===== Khung chung cho 4 phương án hero ===== */
+.stage { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.stage-box { position: absolute; left: 50%; top: 50%; width: 520px; height: 520px; margin: -260px 0 0 -260px; transform-origin: 50% 50%; will-change: transform, opacity; }
+.look-switch { position: fixed; z-index: 200; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(23,20,31,.86); box-shadow: 0 10px 30px -10px rgba(0,0,0,.45); max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none; }
+.look-switch button { font: 600 .8rem/1 var(--f-body); color: rgba(255,255,255,.75); background: transparent; border: 0; border-radius: 999px; padding: 10px 14px; cursor: pointer; white-space: nowrap; }
+.look-switch button b { font-family: var(--f-mono); margin-right: 6px; color: #F7A26B; }
+.look-switch button[aria-pressed="true"] { background: #F37021; color: #fff; }
+.look-switch button[aria-pressed="true"] b { color: #fff; }
+.floor { position: absolute; left: 50%; width: 76%; height: 18%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(140,60,15,.22), rgba(140,60,15,.08) 55%, rgba(140,60,15,0)); }
+
+/* ===== A. Các lớp thẻ kính 3D ===== */
+.a-scene { position: absolute; inset: 0; perspective: 1700px; perspective-origin: 50% 35%; }
+.a-stack { position: absolute; left: 50%; top: 50%; width: 300px; height: 196px; margin: -60px 0 0 -150px; transform-style: preserve-3d; }
+.a-card { position: absolute; inset: 0; border-radius: 16px; padding: 14px 16px; background: linear-gradient(160deg, #fff, #FFF6EF); border: 1px solid rgba(23,20,31,.08);
+  box-shadow: inset 0 1px 0 #fff, 0 22px 44px -22px rgba(150,60,10,.45); font: 500 11px/1.5 var(--f-body); color: var(--ink); transition: border-color .35s, box-shadow .35s; }
+.a-card.on { border-color: rgba(243,112,33,.7); box-shadow: 0 0 0 3px rgba(243,112,33,.14), 0 34px 60px -24px rgba(196,81,13,.55); }
+.a-head { display: flex; align-items: center; gap: 8px; font: 600 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.a-head .n { color: var(--orange); }
+.a-head .st { margin-left: auto; color: #2F8F5B; letter-spacing: .04em; }
+.a-l { height: 7px; border-radius: 4px; background: #F1E7DF; margin: 7px 0; }
+.a-l.o { background: rgba(243,112,33,.28); }
+.a-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.a-chip { font: 500 10px/1 var(--f-mono); padding: 6px 8px; border-radius: 6px; background: #FFF0E5; color: var(--orange-deep); }
+.a-pair { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; }
+.a-av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 var(--f-body); background: #F3EBE4; color: var(--ink); }
+.a-av.ai { background: var(--orange); color: #fff; }
+.a-link { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--orange) 0 6px, transparent 6px 11px); }
+.a-ck { display: flex; gap: 8px; align-items: center; margin: 5px 0; color: var(--muted); }
+.a-ck i { width: 13px; height: 13px; border-radius: 4px; border: 1.5px solid var(--orange); display: grid; place-items: center; font-style: normal; font-size: 9px; color: #fff; background: var(--orange); }
+.a-code { font: 500 10.5px/1.7 var(--f-mono); color: #3A3442; white-space: pre; }
+.a-code .k { color: var(--orange-deep); } .a-code .add { background: rgba(47,143,91,.12); color: #22764A; display: block; } .a-code .del { background: rgba(200,60,40,.1); color: #A3392A; display: block; }
+.a-t { display: flex; justify-content: space-between; margin: 5px 0; font: 500 10.5px/1.4 var(--f-mono); color: var(--muted); }
+.a-t b { color: #2F8F5B; }
+.a-app { border: 1px solid rgba(23,20,31,.08); border-radius: 10px; overflow: hidden; }
+.a-app .bar { display: flex; gap: 4px; padding: 6px 8px; background: #FBF6F2; } .a-app .bar i { width: 6px; height: 6px; border-radius: 50%; background: #E3D8CF; }
+.a-app .bd { padding: 8px 10px; display: grid; gap: 6px; } .a-app .f { height: 14px; border-radius: 4px; border: 1px solid #EDE3DB; } .a-app .btn2 { height: 18px; width: 60%; border-radius: 9px; background: var(--orange); }
+
+/* ===== B. Khối cam 3D bóng mượt ===== */
+.b-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ===== C. Cửa sổ code tự viết ===== */
+.c-scene { position: absolute; inset: 0; perspective: 1500px; }
+.c-rig { position: absolute; left: 50%; top: 50%; width: 460px; height: 250px; margin: -125px 0 0 -230px; transform-style: preserve-3d; }
+.c-win { position: absolute; inset: 0; border-radius: 14px; background: #fff; border: 1px solid rgba(23,20,31,.08); overflow: hidden; box-shadow: 0 46px 80px -34px rgba(120,50,10,.42), 0 2px 8px rgba(0,0,0,.04); }
+.c-bar { height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: #FBF7F4; border-bottom: 1px solid rgba(23,20,31,.06); }
+.c-bar i { width: 9px; height: 9px; border-radius: 50%; background: #E8DED6; }
+.c-tab { margin-left: 12px; font: 500 11px/1 var(--f-mono); color: var(--ink); background: #fff; padding: 8px 12px 9px; border-radius: 8px 8px 0 0; align-self: flex-end; border: 1px solid rgba(23,20,31,.06); border-bottom: 0; }
+.c-code { padding: 16px 18px; font: 500 13.5px/1.8 var(--f-mono); color: #3A3442; }
+.c-line { display: flex; }
+.c-line .g { width: 26px; flex: none; color: #C9BFC6; user-select: none; }
+.c-line .t { white-space: pre; overflow: hidden; max-width: calc(var(--v, 0) * 1ch); }
+.c-line.cur .t::after { content: ""; }
+.c-caret { display: inline-block; width: 7px; height: 15px; margin-left: 1px; vertical-align: -3px; background: var(--orange); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.c-code .k { color: var(--orange-deep); } .c-code .s { color: #2F7D5B; } .c-code .c { color: #A39AA6; } .c-code .ok { color: #2F8F5B; }
+.c-code .add { color: #22764A; } .c-code .del { color: #A3392A; }
+.c-bubble { position: absolute; right: -64px; top: 66px; width: 200px; transform: translateZ(90px); background: #fff; border-radius: 14px; padding: 11px 14px; font: 500 12px/1.45 var(--f-body); color: var(--ink); box-shadow: 0 24px 46px -20px rgba(120,50,10,.45); border: 1px solid rgba(243,112,33,.25); transition: opacity .3s; }
+.c-bubble b { display: block; font: 600 10px/1 var(--f-mono); letter-spacing: .1em; color: var(--orange); margin-bottom: 6px; }
+.c-pill { position: absolute; left: -34px; bottom: 30px; transform: translateZ(140px); background: var(--orange); color: #fff; border-radius: 999px; padding: 9px 15px; font: 600 12px/1 var(--f-mono); box-shadow: 0 18px 30px -12px rgba(196,81,13,.6); white-space: nowrap; }
+
+/* ===== D. Khối isometric xếp dần ===== */
+.d-scene { position: absolute; inset: 0; perspective: 2400px; }
+.d-iso { position: absolute; left: 50%; top: 64%; width: 0; height: 0; transform-style: preserve-3d; }
+.d-slab { position: absolute; transform-style: preserve-3d; }
+.d-f { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.d-top { width: var(--w); height: var(--w); transform: translateZ(var(--h)); background: linear-gradient(135deg, #fff, #FFF4EB); box-shadow: inset 0 0 0 1px rgba(196,81,13,.12); display: grid; place-content: center; justify-items: center; gap: 2px; text-align: center; }
+.d-top b { font: 600 13px/1 var(--f-mono); color: var(--orange); letter-spacing: .08em; }
+.d-top span { font: 700 21px/1.1 var(--f-body); color: var(--ink); letter-spacing: -.01em; }
+.d-s { width: var(--w); height: var(--h); transform: translateY(var(--w)) translateZ(var(--h)) rotateX(-90deg); background: #F7955A; }
+.d-e { width: var(--h); height: var(--w); transform: translateX(var(--w)) translateZ(var(--h)) rotateY(90deg); background: #DE5E15; }
+.d-slab.on .d-top { background: linear-gradient(135deg, #F7883F, #F37021); box-shadow: none; }
+.d-slab.on .d-top b { color: #FFE3CF; } .d-slab.on .d-top span { color: #fff; }
+.d-slab.ghost .d-top { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(196,81,13,.28); }
+.d-slab.ghost .d-top b, .d-slab.ghost .d-top span { opacity: .35; }
+.d-slab.ghost .d-s, .d-slab.ghost .d-e { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(196,81,13,.22); }
+.d-base .d-top { background: #F6EDE6; box-shadow: none; } .d-base .d-s { background: #EADBD0; } .d-base .d-e { background: #DCC8BA; }
+.d-shadow { position: absolute; width: 420px; height: 420px; left: -210px; top: -210px; transform: translateZ(-2px); background: radial-gradient(closest-side, rgba(140,60,15,.25), rgba(140,60,15,0)); }

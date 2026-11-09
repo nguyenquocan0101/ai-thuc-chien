@@ -1,0 +1,1023 @@
+<title>AI Thực Chiến FA26</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: dark galaxy hero (pinned, copy on scroll) → bright white page with soft orange light behind liquid-glass panels. One accent: FPTU orange. */
+:root {
+  --space: #FFFCF9;        /* hero: nền trắng ấm */
+  --bg: #FFFFFF;           /* page below the hero */
+  --bg-alt: #FFF7F1;       /* warm white band */
+  --ink: #17141F;
+  --muted: #6A6274;
+  --line: #ECE4DC;
+  --orange: #F37021;       /* FPTU brand orange */
+  --orange-deep: #C4510D;  /* chữ nhỏ cam trên nền trắng (đủ tương phản); nút dùng --orange */
+  --ember: #FF8A3D;        /* orange on dark */
+  --orange-soft: #FFEADB;
+  --err: #B42318;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s-1: clamp(2.3rem, 1.4rem + 3.6vw, 4.1rem);
+  --s-2: clamp(1.75rem, 1.25rem + 1.9vw, 2.6rem);
+  --wrap: 1120px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; scrollbar-width: thin; scrollbar-color: rgba(196,81,13,.6) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(196,81,13,.55); border-radius: 99px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(196,81,13,.85); border: 3px solid transparent; background-clip: padding-box; }
+body { margin: 0; background: var(--space); color: var(--ink); font-family: var(--f-body); font-size: 1.0625rem; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--space); }
+a { color: var(--orange-deep); }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; border-radius: 8px; }
+h1, h2, h3 { font-family: var(--f-body); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h1 { font-size: var(--s-1); line-height: 1.08; font-weight: 700; }
+h2 { font-size: var(--s-2); line-height: 1.15; font-weight: 700; }
+h3 { font-size: 1.2rem; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: .76rem; letter-spacing: .14em; text-transform: uppercase; color: var(--orange-deep); }
+.lead { color: var(--muted); font-size: 1.12rem; max-width: 58ch; }
+.band { position: relative; background: var(--bg); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: hidden; }
+.band.alt { background: var(--bg-alt); }
+.band > .inner { position: relative; max-width: var(--wrap); margin-inline: auto; padding-block: clamp(72px, 10vw, 120px); }
+.sec-head { display: grid; gap: 14px; margin-bottom: clamp(32px, 5vw, 52px); max-width: 700px; }
+/* soft orange light so the glass has something to bend */
+.glow::before, .glow::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; filter: blur(10px); }
+.glow::before { width: 520px; height: 520px; left: -140px; top: 30%; background: radial-gradient(closest-side, rgba(243,112,33,.30), rgba(243,112,33,0)); }
+.glow::after { width: 460px; height: 460px; right: -120px; top: -60px; background: radial-gradient(closest-side, rgba(255,178,127,.38), rgba(255,178,127,0)); }
+main, footer { position: relative; z-index: 1; }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+/* Header: floating liquid-glass pill, dark over hero, light over the page */
+.top { position: fixed; left: 0; right: 0; top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 50; display: flex; justify-content: center; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); pointer-events: none; }
+.top glass-element { pointer-events: auto; max-width: 100%; --glass-padding: 6px 6px 6px 22px; }
+.bar { display: flex; align-items: center; gap: clamp(12px, 3vw, 30px); font-family: var(--f-body); text-align: left; }
+.brand { display: grid; line-height: 1.1; text-decoration: none; color: #fff; white-space: nowrap; }
+.brand b { font-weight: 700; font-size: .98rem; letter-spacing: -0.01em; }
+.brand small { font-family: var(--f-mono); font-size: .62rem; letter-spacing: .16em; color: rgba(255,255,255,.62); }
+.nav { display: flex; gap: 20px; align-items: center; }
+.nav a:not(.btn) { color: rgba(255,255,255,.82); text-decoration: none; font-size: .92rem; font-weight: 500; white-space: nowrap; }
+.nav a:not(.btn):hover { color: #fff; }
+.lang { display: inline-flex; align-items: center; gap: 6px; font: 500 .8rem/1 var(--f-mono); letter-spacing: .06em; color: rgba(255,255,255,.45); background: none; border: 0; padding: 8px 2px; cursor: pointer; }
+.lang .on { color: #fff; }
+.lang .sep { opacity: .5; }
+.lang:hover span:not(.on):not(.sep) { color: rgba(255,255,255,.8); }
+.top.light .brand, .top.light .nav a:not(.btn) { color: var(--ink); }
+.top.light .brand small { color: var(--muted); }
+.top.light .lang { color: rgba(23,20,31,.4); }
+.top.light .lang .on { color: var(--ink); }
+.top.light .lang:hover span:not(.on):not(.sep) { color: var(--ink); }
+@media (max-width: 720px) { .nav a:not(.btn) { display: none; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; font: 600 1rem/1 var(--f-body); padding: 15px 24px; border-radius: 999px; border: 1.5px solid transparent; text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform .2s ease, box-shadow .2s ease; }
+.btn-primary { background: var(--orange); color: #fff; } /* nút dùng đúng cam FPTU #F37021 */
+.btn-primary:hover { background: #E2621A; transform: translateY(-2px); box-shadow: 0 10px 26px -10px rgba(243,112,33,.8); }
+.btn-sm { padding: 11px 18px; font-size: .9rem; }
+.btn[disabled] { background: #E4DCD4; color: #8C8394; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Hero */
+.hero { position: relative; height: 770vh; }
+.hero-stack { display: grid; width: 100%; }
+.hero-stack > * { grid-area: 1 / 1; }
+.mods { position: relative; max-width: 520px; min-width: 0; pointer-events: none; align-self: center; }
+.mod { grid-area: 1 / 1; display: grid; gap: 16px; opacity: 0; will-change: opacity, transform; }
+.mods { display: grid; }
+.mod .k { font-family: var(--f-mono); font-size: .8rem; letter-spacing: .16em; color: var(--orange-deep); }
+.mod h2 { color: var(--ink); font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3.1rem); line-height: 1.12; }
+.mod p { color: var(--muted); font-size: 1.1rem; max-width: 40ch; }
+.mod-bar { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 6px; opacity: 0; z-index: 2; }
+.mod-bar i { width: 28px; height: 3px; border-radius: 3px; background: rgba(23,20,31,.1); overflow: hidden; position: relative; }
+.mod-bar i b { position: absolute; inset: 0; background: var(--orange); transform-origin: left; transform: scaleX(0); }
+.hero { --x: 0; }
+.hero-anchor { position: absolute; left: 0; width: 1px; height: 1px; top: 172vh; }
+.after-hero { position: relative; z-index: 4; margin-top: -100vh; background: linear-gradient(rgba(255,255,255,0) 0, #fff 55vh); }
+.after-hero > .band:first-child { background: transparent; }
+.after-hero > .band:first-child > .inner { padding-top: 62vh; }
+#gia-tri .sec-head { margin-inline: auto; text-align: center; justify-items: center; }
+#gia-tri .sec-head .lead { margin-inline: auto; }
+.hero-warp { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; --cx: 70%; --cy: 50%; --r: -30vmax;
+  background: radial-gradient(circle at var(--cx) var(--cy), #fff var(--r), #FFF3EA calc(var(--r) + 5vmax), rgba(255,170,110,.55) calc(var(--r) + 11vmax), rgba(243,112,33,.18) calc(var(--r) + 20vmax), rgba(243,112,33,0) calc(var(--r) + 30vmax)); }
+.hero-pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.hero-shade { position: absolute; inset: 0; pointer-events: none; background: none; opacity: 0; } /* desktop: không phủ lớp trắng lên thiên hà (chữ nằm bên trái, thiên hà bên phải) */
+.hero-inner { position: relative; z-index: 2; height: 100%; max-width: var(--wrap); margin-inline: auto; display: flex; align-items: center; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.hero-copy { max-width: 600px; display: grid; gap: 24px; min-width: 0; }
+.hero h1 { color: var(--ink); }
+.hero h1 .accent { color: var(--orange); }
+.hero .sub { font-size: 1.18rem; color: var(--muted); max-width: 44ch; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.glass-cta { --glass-padding: 0; border-radius: 26px; box-shadow: inset 0 0 0 1.5px rgba(23,20,31,.14); }
+.glass-cta a { display: inline-block; padding: 15px 26px; color: var(--ink); font: 600 1rem/1 var(--f-body); text-decoration: none; white-space: nowrap; }
+.hero-js .h-rv { opacity: 0; transform: translateY(24px); filter: blur(8px); will-change: opacity, transform, filter; }
+.scroll-hint { position: absolute; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; display: grid; justify-items: center; gap: 12px; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.scroll-hint i { width: 1px; height: 46px; background: linear-gradient(var(--orange-deep), rgba(196,81,13,0)); transform-origin: top; animation: drip 1.8s ease-in-out infinite; }
+@keyframes drip { 0% { transform: scaleY(0); opacity: 1; } 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+@media (max-width: 760px) {
+  .hero-inner { align-items: flex-end; padding-bottom: 16vh; }
+  .mods { align-self: end; }
+  .mod h2 { font-size: 1.75rem; } .mod p { font-size: 1rem; }
+  .mod-bar { left: 16px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .hero-shade { background: linear-gradient(rgba(255,252,249,0) 0%, rgba(255,252,249,0) 50%, rgba(255,252,249,.88) 82%); } /* mobile: chỉ làm nền nhẹ ở đáy, nơi có chữ */
+}
+
+/* Liquid glass panels on white */
+glass-element, glass-element > * { font-family: var(--f-body); text-align: left; }
+glass-element.block { display: block; width: 100%; --glass-padding: 0; }
+glass-element.block > div { width: var(--w, auto); max-width: 100%; text-align: left; color: var(--ink); }
+
+/* Values */
+.values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.value { padding: clamp(24px, 2.6vw, 32px); display: grid; gap: 12px; align-content: start; min-height: 190px; }
+.value .num { font-family: var(--f-mono); font-size: .74rem; color: var(--orange-deep); letter-spacing: .12em; text-transform: uppercase; }
+.value p { color: var(--muted); }
+@media (max-width: 860px) { .values { grid-template-columns: 1fr; } .value { min-height: 0; } }
+
+/* Topics (a real sequence) */
+.topics { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: clamp(24px, 5vw, 64px); counter-reset: tp; }
+.topics li { counter-increment: tp; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: baseline; padding: 22px 0; border-top: 1px solid var(--line); min-width: 0; }
+.topics li::before { content: counter(tp, decimal-leading-zero); font-family: var(--f-mono); font-size: 1.35rem; color: var(--orange); }
+.topics h3 { font-size: 1.12rem; }
+.topics p { color: var(--muted); font-size: .97rem; margin-top: 4px; }
+@media (max-width: 760px) { .topics { grid-template-columns: 1fr; } }
+
+/* Registration */
+.reg .inner { display: grid; max-width: 760px; }
+.reg-aside { display: grid; gap: 24px; min-width: 0; }
+.info-box { padding: 20px 24px; display: grid; }
+.info-box h3 { font-size: 1rem; margin-bottom: 6px; }
+.info-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(23,20,31,.08); font-size: .95rem; }
+.info-row:last-child { border-bottom: 0; }
+.info-row span:first-child { color: var(--muted); }
+.info-row span:last-child { font-weight: 600; text-align: right; }
+.tbd { display: inline-block; font: 500 .72rem/1 var(--f-mono); padding: 6px 10px; border-radius: 999px; background: var(--orange-soft); color: #8A3A08; letter-spacing: .03em; }
+.who { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.who li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: .98rem; }
+.who li::before { content: ""; width: 8px; height: 8px; margin-top: 9px; border-radius: 2px; background: var(--orange); transform: rotate(45deg); }
+form { background: rgba(255,255,255,.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.9); border-radius: 22px; padding: clamp(20px, 3.5vw, 34px); display: grid; gap: 22px; box-shadow: inset 1px 1px 0 #fff, 0 30px 70px -40px rgba(196,81,13,.45); }
+.fbody { display: grid; gap: 22px; }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.field { display: grid; gap: 7px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+label, .legend { font-weight: 600; font-size: .93rem; }
+.req { color: var(--orange-deep); }
+.hint { font-size: .82rem; color: var(--muted); }
+input[type=text], input[type=email], select { width: 100%; font: 400 1rem var(--f-body); color: var(--ink); background: #FCFAF8; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+input[type=text]:hover, input[type=email]:hover, select:hover { border-color: #DCCFC3; }
+select { -webkit-appearance: none; appearance: none; padding-right: 44px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23C4510D' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
+input::placeholder { color: #A59DAD; }
+input:focus, select:focus { outline: none; background-color: #fff; border-color: var(--orange); box-shadow: 0 0 0 4px var(--orange-soft); }
+.field.bad input, .field.bad select { border-color: var(--err); }
+.err { font-size: .83rem; color: var(--err); }
+.err:empty { display: none; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span { display: inline-block; padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; font-size: .93rem; cursor: pointer; transition: all .2s; }
+.chip input:checked + span { border-color: var(--orange); background: var(--orange-soft); color: #7A3307; font-weight: 600; }
+.chip input:focus-visible + span { outline: 3px solid var(--orange); outline-offset: 2px; }
+.pledge { border: 1px solid var(--line); border-radius: 16px; background: var(--bg-alt); padding: 20px; display: grid; gap: 14px; }
+.pledge-text { max-height: 170px; overflow-y: auto; font-size: .92rem; padding-right: 14px; scrollbar-width: thin; scrollbar-color: rgba(196,81,13,.55) transparent; -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }
+.pledge-text::-webkit-scrollbar { width: 6px; }
+.pledge-text::-webkit-scrollbar-track { background: rgba(23,20,31,.05); border-radius: 99px; }
+.pledge-text::-webkit-scrollbar-thumb { background: linear-gradient(var(--orange), var(--orange-deep)); border-radius: 99px; }
+.pledge-text ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.tick { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; font-weight: 500; font-size: .95rem; cursor: pointer; }
+.tick input { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin: 1px 0 0; border: 1.5px solid #D6CABE; border-radius: 7px; background: #fff; display: grid; place-content: center; cursor: pointer; transition: background-color .2s, border-color .2s, box-shadow .2s; }
+.tick input::after { content: ""; width: 11px; height: 6px; border-left: 2.2px solid #fff; border-bottom: 2.2px solid #fff; transform: translateY(-1px) rotate(-45deg) scale(0); transition: transform .2s cubic-bezier(.3,1.6,.5,1); }
+.tick input:checked { background: var(--orange); border-color: var(--orange); box-shadow: 0 4px 12px -4px rgba(243,112,33,.6); }
+.tick input:checked::after { transform: translateY(-1px) rotate(-45deg) scale(1); }
+.tick:hover input:not(:checked) { border-color: var(--orange); }
+.tick input:focus-visible { outline: 3px solid var(--orange-soft); outline-offset: 2px; }
+.submit-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+.submit-row .hint { max-width: 36ch; }
+.done { display: grid; gap: 16px; }
+.done .ok { width: 52px; height: 52px; border-radius: 50%; background: var(--orange); display: grid; place-items: center; }
+.done .ok svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.demo-note { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+@media (max-width: 900px) { .reg .inner { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .fgrid { grid-template-columns: 1fr; } }
+
+/* FAQ */
+.faq { display: grid; max-width: 820px; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; padding: 22px 44px 22px 0; font-weight: 600; font-size: 1.06rem; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; position: absolute; right: 6px; top: 50%; width: 11px; height: 11px; border-right: 2px solid var(--orange-deep); border-bottom: 2px solid var(--orange-deep); transform: translateY(-70%) rotate(45deg); transition: transform .25s; }
+.faq details[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.faq details p { padding: 0 0 22px; color: var(--muted); max-width: 66ch; }
+
+footer.band { background: var(--bg-alt); border-top: 1px solid var(--line); }
+footer .inner { padding-block: 40px !important; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+footer .muted { color: var(--muted); font-size: .9rem; }
+
+.rv.pending { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+.rv { transition: opacity .7s ease-out, transform .7s ease-out, filter .7s ease-out; transition-delay: var(--d, 0s); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero { height: 100vh; height: 100svh; }
+  .hero-warp { display: none; }
+  .hero-js .h-rv { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .hero-shade { opacity: 1 !important; }
+  .mods, .mod-bar { display: none; }
+  .after-hero { margin-top: 0; background: #fff; } .after-hero > .band:first-child > .inner { padding-top: clamp(72px, 10vw, 120px); }
+  .scroll-hint { display: none; }
+  .rv, .rv.pending { opacity: 1; transform: none; filter: none; transition: none; }
+  .btn { transition: none; }
+}
+</style>
+
+<header class="top">
+  <glass-element auto-size radius="26" blur="3" strength="30" depth="6" background-color="rgba(16,12,26,0.32)">
+    <div class="bar">
+      <nav class="nav" aria-label="Menu">
+        <a href="#noi-dung" data-i18n="nav.program"></a>
+        <a href="#faq" data-i18n="nav.faq"></a>
+        <button class="lang" type="button" id="langBtn"></button>
+        <a class="btn btn-primary btn-sm" href="#dang-ky" data-i18n="nav.cta"></a>
+      </nav>
+    </div>
+  </glass-element>
+</header>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<main id="top">
+  <section class="hero" id="hero">
+    <div class="hero-anchor" id="noi-dung"></div>
+    <div class="hero-pin">
+      <div class="hero-shade" id="heroShade"></div>
+      <div class="hero-inner">
+       <div class="hero-stack">
+        <div class="hero-copy">
+          <h1 class="h-rv" data-at=".18" data-i18n-html="hero.title"></h1>
+          <p class="sub h-rv" data-at=".27" data-i18n="hero.sub"></p>
+          <div class="cta-row h-rv" data-at=".35">
+            <a class="btn btn-primary" href="#dang-ky" data-i18n="hero.cta"></a>
+            <glass-element class="glass-cta" auto-size radius="26" blur="2" strength="60" depth="10" chromatic-aberration="2" background-color="rgba(255,255,255,0.55)"><a href="#noi-dung" data-i18n="hero.cta2"></a></glass-element>
+          </div>
+        </div>
+        <div class="mods" id="mods" aria-live="polite">
+          <div class="mod"><span class="k">01 / 06</span><h2 data-i18n="top.t1"></h2><p data-i18n="top.d1"></p></div>
+          <div class="mod"><span class="k">02 / 06</span><h2 data-i18n="top.t2"></h2><p data-i18n="top.d2"></p></div>
+          <div class="mod"><span class="k">03 / 06</span><h2 data-i18n="top.t3"></h2><p data-i18n="top.d3"></p></div>
+          <div class="mod"><span class="k">04 / 06</span><h2 data-i18n="top.t4"></h2><p data-i18n="top.d4"></p></div>
+          <div class="mod"><span class="k">05 / 06</span><h2 data-i18n="top.t5"></h2><p data-i18n="top.d5"></p></div>
+          <div class="mod"><span class="k">06 / 06</span><h2 data-i18n="top.t6"></h2><p data-i18n="top.d6"></p></div>
+        </div>
+       </div>
+       <div class="mod-bar" id="modBar" aria-hidden="true"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
+      </div>
+      <div class="hero-warp" id="heroWarp" aria-hidden="true"></div>
+      <div class="scroll-hint" id="scrollHint" aria-hidden="true"><span data-i18n="hero.scroll"></span><i></i></div>
+    </div>
+  </section>
+
+  <div class="after-hero">
+  <section class="band" id="gia-tri"><!-- không dùng .glow: phần này phủ lên hero khi chuyển cảnh, quầng cam bị cắt thành mảng mờ -->
+    <div class="inner">
+      <div class="sec-head rv">
+        <span class="eyebrow" data-i18n="val.eyebrow"></span>
+        <h2 data-i18n="val.title"></h2>
+        <p class="lead" data-i18n="val.lead"></p>
+      </div>
+      <div class="values">
+        <glass-element class="block rv" auto-size radius="22" blur="3" strength="40" depth="12" chromatic-aberration="1" background-color="rgba(255,255,255,0.5)"><div class="value"><span class="num" data-i18n="val.k1"></span><h3 data-i18n="val.h1"></h3><p data-i18n="val.p1"></p></div></glass-element>
+        <glass-element class="block rv" style="--d:.08s" auto-size radius="22" blur="3" strength="40" depth="12" chromatic-aberration="1" background-color="rgba(255,255,255,0.5)"><div class="value"><span class="num" data-i18n="val.k2"></span><h3 data-i18n="val.h2"></h3><p data-i18n="val.p2"></p></div></glass-element>
+        <glass-element class="block rv" style="--d:.16s" auto-size radius="22" blur="3" strength="40" depth="12" chromatic-aberration="1" background-color="rgba(255,255,255,0.5)"><div class="value"><span class="num" data-i18n="val.k3"></span><h3 data-i18n="val.h3"></h3><p data-i18n="val.p3"></p></div></glass-element>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <section class="band glow reg" id="dang-ky">
+    <div class="inner">
+
+      <form id="regForm" novalidate>
+        <div id="formBody" class="fbody">
+          <div class="fgrid">
+            <div class="field full">
+              <label for="f-name"><span data-i18n="f.name"></span> <span class="req">*</span></label>
+              <input id="f-name" name="name" type="text" autocomplete="name" data-i18n-ph="f.namePh" aria-describedby="e-name">
+              <span class="err" id="e-name"></span>
+            </div>
+            <div class="field">
+              <label for="f-id"><span data-i18n="f.id"></span> <span class="req">*</span></label>
+              <input id="f-id" name="studentId" type="text" placeholder="SE123456" autocapitalize="characters" aria-describedby="h-id e-id">
+              <span class="hint" id="h-id" data-i18n="f.idHint"></span>
+              <span class="err" id="e-id"></span>
+            </div>
+            <div class="field">
+              <label for="f-email"><span data-i18n="f.email"></span> <span class="req">*</span></label>
+              <input id="f-email" name="email" type="email" autocomplete="email" placeholder="ten@fpt.edu.vn" aria-describedby="h-email e-email">
+              <span class="hint" id="h-email" data-i18n="f.emailHint"></span>
+              <span class="err" id="e-email"></span>
+            </div>
+            <div class="field">
+              <label for="f-major"><span data-i18n="f.major"></span> <span class="req">*</span></label>
+              <select id="f-major" name="major" aria-describedby="e-major">
+                <option value="" data-i18n="f.majorPick"></option>
+                <option value="SE" data-i18n="m.se"></option>
+                <option value="AI" data-i18n="m.ai"></option>
+                <option value="IA" data-i18n="m.ia"></option>
+                <option value="IS" data-i18n="m.is"></option>
+                <option value="OTHER" data-i18n="m.other"></option>
+              </select>
+              <span class="err" id="e-major"></span>
+            </div>
+            <div class="field">
+              <label for="f-term"><span data-i18n="f.term"></span> <span class="req">*</span></label>
+              <select id="f-term" name="term" aria-describedby="e-term"><option value="" data-i18n="f.termPick"></option></select>
+              <span class="err" id="e-term"></span>
+            </div>
+          </div>
+
+          <div class="pledge">
+            <span class="legend" data-i18n="f.pledge"></span>
+            <div class="pledge-text" tabindex="0" data-i18n-html="f.pledgeText"></div>
+            <label class="tick"><input type="checkbox" id="c-pledge"> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
+          </div>
+
+          <div class="submit-row">
+            <p class="hint" id="submitHint"></p>
+            <button class="btn btn-primary" type="submit" id="submitBtn" disabled data-i18n="f.submit"></button>
+          </div>
+        </div>
+
+        <div class="done" id="done" hidden tabindex="-1">
+          <span class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
+          <h3 id="doneTitle"></h3>
+          <p id="doneText"></p>
+          <p class="demo-note" data-i18n="f.demo"></p>
+          <div><button class="btn btn-sm" style="border-color:var(--line);background:#fff;color:var(--ink)" type="button" id="againBtn" data-i18n="f.again"></button></div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="band" id="faq">
+    <div class="inner">
+      <div class="sec-head rv">
+        <span class="eyebrow" data-i18n="faq.eyebrow"></span>
+        <h2 data-i18n="faq.title"></h2>
+      </div>
+      <div class="faq rv">
+        <details><summary data-i18n="faq.q1"></summary><p data-i18n="faq.a1"></p></details>
+        <details><summary data-i18n="faq.q2"></summary><p data-i18n="faq.a2"></p></details>
+        <details><summary data-i18n="faq.q3"></summary><p data-i18n="faq.a3"></p></details>
+        <details><summary data-i18n="faq.q4"></summary><p data-i18n="faq.a4"></p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="band">
+  <div class="inner">
+    <div><b data-i18n="brand"></b> <span class="muted">· AI-Augmented Software Engineering · FPT University · FA26</span></div>
+    <p class="muted" id="contact"></p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@real-human/liquid-glass@1.2.0/dist/liquid-glass.umd.js"></script>
+<script>
+/* Liquid glass: thay viền trắng đậm mặc định bằng một đường sáng rất mảnh */
+(function () {
+  const C = customElements.get("glass-element");
+  if (!C || !C.prototype.applyDynamicStyles) return;
+  const orig = C.prototype.applyDynamicStyles;
+  C.prototype.applyDynamicStyles = function (box) {
+    orig.call(this, box);
+    box.style.boxShadow = this.getAttribute("edge") || "inset 0 1px 0 rgba(255,255,255,.10)";
+    box.style.border = "none";
+  };
+})();
+
+/* ===== Thông tin chương trình: sửa ở đây. null = "Sẽ cập nhật". Có thể ghi chuỗi, hoặc { vi: "...", en: "..." } ===== */
+const COURSE = {
+  period: { vi: "Tuần 12–13, học kỳ FA26", en: "Weeks 12–13, Fall 2026" },
+  days: null,        // ví dụ: { vi: "Thứ 3, 5, 7", en: "Tue, Thu, Sat" }
+  time: null,        // ví dụ: "13:00 – 17:00"
+  room: null,        // ví dụ: "Alpha 301"
+  deadline: null,    // ví dụ: "20/11/2026"
+  seats: null,       // ví dụ: { vi: "60 sinh viên", en: "60 students" }
+  resultDate: null,  // ví dụ: "25/11/2026"
+  contact: null      // ví dụ: "aithucchien@fe.edu.vn"
+};
+
+const I18N = {
+  vi: {
+    "nav.program": "Nội dung", "nav.schedule": "Lịch học", "nav.faq": "Hỏi đáp", "nav.cta": "Đăng ký",
+    "brand": "AI Thực Chiến", "doc.title": "AI Thực Chiến FA26",
+    "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
+    "hero.sub": "Từ yêu cầu đến phần mềm chạy thật. AI hỗ trợ từng bước, bạn kiểm chứng và quyết định.",
+    "hero.cta": "Đăng ký miễn phí", "hero.cta2": "Xem nội dung", "hero.scroll": "Cuộn để khám phá",
+    "val.eyebrow": "Chương trình", "val.title": "Học làm phần mềm khi AI là đồng đội.",
+    "val.k1": "Quy trình", "val.h1": "Không chỉ là công cụ", "val.p1": "Bạn đưa AI vào từng bước của quy trình: phân tích yêu cầu, thiết kế, lập trình và kiểm thử. Mục tiêu là biết dùng AI đúng chỗ, không phải thuộc lòng một công cụ.",
+    "val.k2": "Kiểm chứng", "val.h2": "AI đề xuất, bạn quyết định", "val.p2": "AI có thể viết sai, bịa API hoặc bỏ sót trường hợp. Bạn tập viết test, đọc diff và review code để kiểm chứng mọi thứ AI tạo ra, và tự chịu trách nhiệm với quyết định cuối cùng.",
+    "val.k3": "Sản phẩm", "val.h3": "Làm ra phần mềm thật", "val.p3": "Cùng nhóm làm một dự án thực tế, đi từ user story đến bản demo chạy được. Cuối chương trình, nhóm trình bày sản phẩm và giải thích AI đã giúp ở đâu, sai ở đâu.",
+    "val.lead": "Chương trình giúp sinh viên khối IT làm quen với cách phát triển phần mềm có AI hỗ trợ. Bạn thực hành trên một dự án cụ thể, từ phân tích yêu cầu, thiết kế, lập trình đến kiểm thử, thay vì chỉ học công cụ hay cách viết prompt.",
+    "top.lead": "Mỗi nhóm đưa một user story đi từ yêu cầu đến bản demo, và giải thích được AI đã tham gia ở đâu, sai ở đâu, nhóm kiểm chứng như thế nào.",
+    "top.o1": "Repository dự án và nhật ký sử dụng AI", "top.o2": "Bản đặc tả và bộ bối cảnh cho agent", "top.o3": "User story, ERD và đặc tả API", "top.o4": "Một luồng chạy thông từ giao diện đến cơ sở dữ liệu", "top.o5": "Bộ test, báo cáo lỗi và nhận xét review", "top.o6": "Sản phẩm chạy được, buổi demo và bản tự đánh giá", "top.out": "Kết quả",
+    "top.d1": "AI làm được gì và chưa làm được gì trong quy trình làm phần mềm.",
+    "top.d2": "Viết yêu cầu rõ ràng và cho AI đủ bối cảnh để làm đúng.",
+    "top.d3": "Đi từ user story đến kiến trúc, dữ liệu và API.",
+    "top.d4": "Lên kế hoạch, giao việc cho agent, đọc và duyệt từng diff.",
+    "top.d5": "Không dừng ở chỗ test pass: tìm lỗi, hiểu nguyên nhân và review kỹ.",
+    "top.d6": "Hoàn thiện sản phẩm và bảo vệ được các quyết định của mình.",
+    "top.eyebrow": "Nội dung", "top.title": "Một user story, đi trọn quy trình.",
+    "top.t1": "Nền tảng AI-Augmented SE", "top.t2": "Prompt & Context Engineering",
+    "top.t3": "Yêu cầu & thiết kế cùng AI", "top.t4": "Coding agent & lập trình",
+    "top.t5": "Kiểm thử, debug & code review", "top.t6": "Tích hợp, demo & đánh giá",
+    "reg.eyebrow": "Đăng ký", "reg.title": "Giữ chỗ của bạn", "reg.lead": "Miễn phí cho sinh viên FPT khối IT. Cần cam kết tham gia đủ buổi.",
+    "reg.info": "Lịch & thông tin", "reg.who": "Ai nên tham gia",
+    "reg.w1": "Sinh viên các chuyên ngành khối Công nghệ thông tin.", "reg.w2": "Biết lập trình cơ bản. Biết Git là lợi thế.", "reg.w3": "Mang theo máy tính cá nhân.",
+    "info.period": "Thời gian", "info.days": "Ngày học", "info.time": "Khung giờ", "info.room": "Địa điểm",
+    "info.deadline": "Hạn đăng ký", "info.seats": "Chỉ tiêu", "info.result": "Công bố kết quả", "tbd": "Sẽ cập nhật",
+    "f.name": "Họ và tên", "f.namePh": "Nguyễn Văn A", "f.id": "MSSV", "f.idHint": "2 chữ cái + 6 chữ số",
+    "f.email": "Email trường", "f.emailHint": "Dùng email @fpt.edu.vn",
+    "f.major": "Chuyên ngành", "f.majorPick": "Chọn chuyên ngành",
+    "m.se": "Kỹ thuật phần mềm", "m.ai": "Trí tuệ nhân tạo", "m.ia": "An toàn thông tin", "m.is": "Hệ thống thông tin", "m.other": "Chuyên ngành khác khối IT",
+    "f.term": "Kỳ học hiện tại", "f.termPick": "Chọn kỳ", "f.termN": "Kỳ ",
+    "f.git": "Bạn đã dùng Git chưa?", "f.git1": "Dùng thường xuyên", "f.git2": "Biết cơ bản", "f.git3": "Chưa dùng",
+    "f.sched": "Xác nhận lịch học", "f.schedTick": "Tôi đã kiểm tra lịch học và có thể tham gia đầy đủ các buổi.",
+    "f.pledge": "Cam kết tham gia",
+    "f.pledgeText": "Tôi đã đọc mục tiêu, nội dung, thời gian và yêu cầu của chương trình. Tôi cam kết:<ol><li>Tham gia đầy đủ và đúng giờ các buổi học.</li><li>Thực hiện nghiêm túc các hoạt động thực hành.</li><li>Tự chuẩn bị máy tính và công cụ cần thiết.</li><li>Hoàn thành bài tập, sản phẩm và phần đánh giá.</li><li>Báo ban tổ chức kịp thời nếu có việc bất khả kháng.</li></ol>",
+    "f.pledgeTick": "Tôi đã đọc và đồng ý với cam kết.",
+    "f.submit": "Gửi đăng ký", "f.hintOff": "Tick ô cam kết để gửi đăng ký.", "f.hintOn": "Kiểm tra lại thông tin rồi bấm Gửi.",
+    "f.demo": "Bản xem trước: dữ liệu chưa được gửi đi.", "f.again": "Sửa thông tin",
+    "f.schedLine": (p, d, t) => `${p} · Ngày học: ${d} · Giờ: ${t}`,
+    "e.name": "Nhập đầy đủ họ và tên.", "e.id": "MSSV gồm 2 chữ cái và 6 chữ số, ví dụ SE123456.",
+    "e.email": "Dùng email trường có đuôi @fpt.edu.vn.", "e.major": "Chọn chuyên ngành.", "e.term": "Chọn kỳ học.",
+    "d.title": n => `Đã nhận đăng ký, ${n}!`,
+    "d.text": (e, d) => `Kết quả xét duyệt sẽ gửi về <b>${e}</b>${d ? ` vào ngày ${d}` : ""}. Hãy kiểm tra cả hộp thư Spam.`,
+    "faq.eyebrow": "Hỏi đáp", "faq.title": "Câu hỏi thường gặp",
+    "faq.q1": "Chương trình có mất phí không?", "faq.a1": "Không. Chương trình miễn phí cho sinh viên FPT University khối IT, chỉ cần đăng ký và được xác nhận.",
+    "faq.q2": "Chưa học Machine Learning có theo được không?", "faq.a2": "Được. Bạn học cách dùng AI để làm phần mềm, không phải xây dựng mô hình AI. Chỉ cần biết lập trình cơ bản.",
+    "faq.q3": "Vì sao phải cam kết tham dự?", "faq.a3": "Các buổi nối tiếp nhau và bạn làm việc theo nhóm. Vắng một buổi ảnh hưởng cả nhóm.",
+    "faq.q4": "Khi nào tôi biết mình được nhận?", "faq.a4": "Kết quả gửi qua email trường kèm lịch chính thức và hướng dẫn chuẩn bị.",
+    "contact": "Liên hệ ban tổ chức:", "lang": "EN", "langLabel": "Switch to English"
+  },
+  en: {
+    "nav.program": "Program", "nav.schedule": "Schedule", "nav.faq": "FAQ", "nav.cta": "Register",
+    "brand": "AI in Practice", "doc.title": "AI in Practice FA26",
+    "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
+    "hero.sub": "From requirements to working software. AI assists every step; you verify and decide.",
+    "hero.cta": "Register for free", "hero.cta2": "See the program", "hero.scroll": "Scroll to explore",
+    "val.eyebrow": "The program", "val.title": "Learn to build software with AI as a teammate.",
+    "val.k1": "Process", "val.h1": "More than a tool", "val.p1": "Bring AI into every step of the process: requirements, design, coding and testing. The goal is knowing where AI helps, not memorising one tool.",
+    "val.k2": "Verification", "val.h2": "AI suggests, you decide", "val.p2": "AI can be wrong, invent APIs or miss edge cases. You practise writing tests, reading diffs and reviewing code to verify everything it produces, and you own the final call.",
+    "val.k3": "Product", "val.h3": "Ship real software", "val.p3": "Work in a team on a real project, from user story to a working demo. At the end, your team presents the product and explains where AI helped and where it went wrong.",
+    "val.lead": "The program helps IT students get hands-on with AI-assisted software development. You work on a real project, from requirements analysis and design to coding and testing, instead of only learning tools or prompting.",
+    "top.lead": "Each team takes one user story from requirements to a demo, and explains where AI helped, where it went wrong, and how the team verified the result.",
+    "top.o1": "Project repository and AI usage log", "top.o2": "Spec and context pack for the agent", "top.o3": "User stories, ERD and API spec", "top.o4": "One working flow from UI to database", "top.o5": "Test suite, bug reports and code review", "top.o6": "Working product, demo and self-evaluation", "top.out": "Output",
+    "top.d1": "What AI can and can't do in the software process.",
+    "top.d2": "Write clear requirements and give AI enough context to get it right.",
+    "top.d3": "From user stories to architecture, data and APIs.",
+    "top.d4": "Plan, delegate to an agent, read and review every diff.",
+    "top.d5": "Don't stop at passing tests: find bugs, understand why, review carefully.",
+    "top.d6": "Finish the product and defend your decisions.",
+    "top.eyebrow": "Program", "top.title": "One user story, the whole process.",
+    "top.t1": "Introduction to AI-Augmented Software Engineering", "top.t2": "Prompt Engineering & Context Engineering",
+    "top.t3": "AI-Assisted Requirements & Software Design", "top.t4": "AI Coding Agents & Software Implementation",
+    "top.t5": "AI-Assisted Testing, Debugging & Code Review", "top.t6": "Project Integration, Demo & Evaluation",
+    "reg.eyebrow": "Register", "reg.title": "Save your seat", "reg.lead": "Free for FPT students in IT majors. Full attendance is required.",
+    "reg.info": "Schedule & details", "reg.who": "Who should join",
+    "reg.w1": "Students in any IT major.", "reg.w2": "Basic programming. Git is a plus.", "reg.w3": "Bring your own laptop.",
+    "info.period": "When", "info.days": "Days", "info.time": "Time", "info.room": "Venue",
+    "info.deadline": "Deadline", "info.seats": "Seats", "info.result": "Results", "tbd": "TBA",
+    "f.name": "Full name", "f.namePh": "Nguyen Van A", "f.id": "Student ID", "f.idHint": "2 letters + 6 digits",
+    "f.email": "School email", "f.emailHint": "Use your @fpt.edu.vn email",
+    "f.major": "Major", "f.majorPick": "Select your major",
+    "m.se": "Software Engineering", "m.ai": "Artificial Intelligence", "m.ia": "Information Assurance", "m.is": "Information Systems", "m.other": "Other IT major",
+    "f.term": "Current term", "f.termPick": "Select term", "f.termN": "Term ",
+    "f.git": "Have you used Git?", "f.git1": "Regularly", "f.git2": "The basics", "f.git3": "Not yet",
+    "f.sched": "Confirm the schedule", "f.schedTick": "I have checked the schedule and can attend every session.",
+    "f.pledge": "Attendance commitment",
+    "f.pledgeText": "I have read the program's goals, content, schedule and requirements. I commit to:<ol><li>Attend every session on time.</li><li>Take part seriously in all hands-on activities.</li><li>Bring my own laptop and required tools.</li><li>Complete the assignments, product and evaluation.</li><li>Inform the organisers promptly if something unavoidable comes up.</li></ol>",
+    "f.pledgeTick": "I have read and agree to the commitment.",
+    "f.submit": "Submit", "f.hintOff": "Tick the commitment box to submit.", "f.hintOn": "Check your details, then submit.",
+    "f.demo": "Preview only: nothing has been sent.", "f.again": "Edit details",
+    "f.schedLine": (p, d, t) => `${p} · Days: ${d} · Time: ${t}`,
+    "e.name": "Enter your full name.", "e.id": "Use 2 letters and 6 digits, e.g. SE123456.",
+    "e.email": "Use your school email ending in @fpt.edu.vn.", "e.major": "Select your major.", "e.term": "Select your term.",
+    "d.title": n => `Registration received, ${n}!`,
+    "d.text": (e, d) => `We'll email the result to <b>${e}</b>${d ? ` on ${d}` : ""}. Check your spam folder too.`,
+    "faq.eyebrow": "FAQ", "faq.title": "Questions",
+    "faq.q1": "Is there a fee?", "faq.a1": "No. It's free for FPT University students in IT majors. You only need to register and be confirmed.",
+    "faq.q2": "I haven't studied Machine Learning. Can I join?", "faq.a2": "Yes. You learn to use AI to build software, not to build AI models. Basic programming is enough.",
+    "faq.q3": "Why do I have to commit to attend?", "faq.a3": "Sessions build on each other and you work in a team. Missing one affects your whole team.",
+    "faq.q4": "When will I know if I'm accepted?", "faq.a4": "You'll get an email at your school address with the official schedule and how to prepare.",
+    "contact": "Contact:", "lang": "VI", "langLabel": "Chuyển sang tiếng Việt"
+  }
+};
+
+let LANG = "vi";
+try { const s = localStorage.getItem("atc-lang"); if (s === "en" || s === "vi") LANG = s; } catch (e) {}
+const t = k => I18N[LANG][k];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pick = v => v == null ? null : (typeof v === "object" ? (v[LANG] || v.vi || v.en) : v);
+const show = v => { const x = pick(v); return x ? esc(x) : `<span class="tbd">${t("tbd")}</span>`; };
+
+const termSel = document.getElementById("f-term");
+for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = t("doc.title");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
+  const lb = document.getElementById("langBtn"); lb.innerHTML = `<span class="${LANG === "vi" ? "on" : ""}">VI</span><span class="sep">/</span><span class="${LANG === "en" ? "on" : ""}">EN</span>`; lb.setAttribute("aria-label", t("langLabel"));
+  document.getElementById("contact").innerHTML = `${t("contact")} ${show(COURSE.contact)}`;
+  window.dispatchEvent(new Event("langchange"));
+}
+document.getElementById("langBtn").addEventListener("click", () => {
+  LANG = LANG === "vi" ? "en" : "vi";
+  try { localStorage.setItem("atc-lang", LANG); } catch (e) {}
+  applyLang();
+});
+applyLang();
+
+/* Liquid glass: thẻ khối giãn đủ chiều rộng cột */
+document.querySelectorAll("glass-element.block").forEach(h => {
+  const set = () => h.style.setProperty("--w", h.clientWidth + "px");
+  set(); if ("ResizeObserver" in window) new ResizeObserver(set).observe(h);
+});
+
+/* ===== Form ===== */
+(function () {
+  const form = document.getElementById("regForm");
+  const btn = document.getElementById("submitBtn");
+  const cPledge = document.getElementById("c-pledge");
+  const hint = document.getElementById("submitHint");
+  const body = document.getElementById("formBody");
+  const done = document.getElementById("done");
+  const sync = () => {
+    const ok = cPledge.checked;
+    btn.disabled = !ok;
+    hint.textContent = t(ok ? "f.hintOn" : "f.hintOff");
+  };
+  cPledge.addEventListener("change", sync);
+  const idInput = document.getElementById("f-id");
+  idInput.addEventListener("input", () => { idInput.value = idInput.value.toUpperCase().replace(/\s/g, ""); });
+  const rules = {
+    "f-name": v => v.trim().split(/\s+/).length >= 2 ? "" : "e.name",
+    "f-id": v => /^[A-Z]{2}\d{6}$/.test(v.trim()) ? "" : "e.id",
+    "f-email": v => /^[^\s@]+@fpt\.edu\.vn$/i.test(v.trim()) ? "" : "e.email",
+    "f-major": v => v ? "" : "e.major",
+    "f-term": v => v ? "" : "e.term"
+  };
+  const check = id => {
+    const el = document.getElementById(id);
+    const key = rules[id](el.value);
+    el.closest(".field").classList.toggle("bad", !!key);
+    el.setAttribute("aria-invalid", key ? "true" : "false");
+    const errEl = document.getElementById("e-" + id.slice(2));
+    errEl.textContent = key ? t(key) : ""; errEl.dataset.key = key;
+    return !key;
+  };
+  Object.keys(rules).forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("blur", () => { if (el.value) check(id); });
+    el.addEventListener("input", () => { if (el.closest(".field").classList.contains("bad")) check(id); });
+    el.addEventListener("change", () => { if (el.closest(".field").classList.contains("bad")) check(id); });
+  });
+  let lastName = "", lastEmail = "";
+  const renderDone = () => {
+    document.getElementById("doneTitle").textContent = t("d.title")(lastName);
+    document.getElementById("doneText").innerHTML = t("d.text")(esc(lastEmail), pick(COURSE.resultDate) ? esc(pick(COURSE.resultDate)) : "");
+  };
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const ids = Object.keys(rules), res = ids.map(check), bad = ids[res.indexOf(false)];
+    if (bad) { document.getElementById(bad).focus(); return; }
+    lastName = document.getElementById("f-name").value.trim().split(/\s+/).pop();
+    lastEmail = document.getElementById("f-email").value.trim();
+    renderDone(); body.hidden = true; done.hidden = false; done.focus();
+  });
+  document.getElementById("againBtn").addEventListener("click", () => { done.hidden = true; body.hidden = false; document.getElementById("f-name").focus(); });
+  addEventListener("langchange", () => {
+    sync();
+    document.querySelectorAll(".err").forEach(el => { if (el.dataset.key) el.textContent = t(el.dataset.key); });
+    if (!done.hidden) renderDone();
+  });
+  sync();
+})();
+
+/* ===== Hiện dần các khối dưới màn hình đầu ===== */
+(function () {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+  const els = [...document.querySelectorAll(".rv")].filter(el => el.getBoundingClientRect().top > innerHeight * 0.95);
+  els.forEach(el => el.classList.add("pending"));
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.remove("pending"); io.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  els.forEach(el => io.observe(el));
+})();
+
+/* ===== Hero: thiên hà 3D + nội dung hiện theo scroll ===== */
+(function () {
+  const root = document.documentElement;
+  const hero = document.getElementById("hero");
+  const canvas = document.getElementById("gl");
+  const shade = document.getElementById("heroShade");
+  const hint = document.getElementById("scrollHint");
+  const header = document.querySelector(".top");
+  let heroOn = true;
+  const items = [...hero.querySelectorAll(".h-rv")];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const ease = t => 1 - Math.pow(1 - t, 3);
+
+  root.classList.add("hero-js");
+  // Dòng thời gian cuộn (đơn vị vh đã cuộn trong hero):
+  // 0–150: hero hiện dần · 150–570: 6 chặng nội dung (70vh mỗi chặng) · 570–670: lặn vào lõi, ánh sáng trắng mở sang phần dưới
+  let p = 0, mp = -1, pt = 0;
+  const warp = document.getElementById("heroWarp"), copy = hero.querySelector(".hero-copy");
+  const mods = [...document.querySelectorAll("#mods .mod")], bar = document.getElementById("modBar"), segs = [...bar.querySelectorAll("b")];
+
+  const onScroll = () => {
+    const r = hero.getBoundingClientRect();
+    const sv = -r.top / innerHeight * 100;
+    p = clamp(sv / 150); mp = (sv - 150) / 70; pt = clamp((sv - 570) / 100);
+    heroOn = r.bottom > 0;
+    const light = true; // hero nền sáng nên header luôn sáng
+    if (header.classList.contains("light") !== light) {
+      header.classList.toggle("light", light);
+      const ge = header.querySelector("glass-element");
+      if (ge) ge.setAttribute("background-color", light ? "rgba(255,255,255,0.62)" : "rgba(16,12,26,0.32)");
+    }
+    if (reduce) return;
+    items.forEach(el => {
+      const o = ease(clamp((p - parseFloat(el.dataset.at)) / 0.12));
+      el.style.opacity = o.toFixed(3);
+      el.style.transform = `translateY(${((1 - o) * 24).toFixed(1)}px)`;
+      el.style.filter = o > 0.99 ? "none" : `blur(${((1 - o) * 8).toFixed(1)}px)`;
+    });
+    shade.style.opacity = clamp((p - 0.1) / 0.2).toFixed(3);
+    hint.style.opacity = (1 - clamp(p / 0.08)).toFixed(3);
+    // Chữ hero rời đi, các chặng nội dung lần lượt vào
+    const co = clamp((sv - 122) / 28);
+    copy.style.opacity = (1 - co).toFixed(3);
+    copy.style.transform = co ? `translateY(${(-co * 36).toFixed(1)}px)` : "";
+    copy.style.pointerEvents = co > 0.5 ? "none" : "";
+    const out = 1 - clamp(pt / 0.35);
+    mods.forEach((el, i) => {
+      const inn = ease(clamp((mp - i + 0.12) / 0.28));
+      const lv = i === mods.length - 1 ? 1 - out : ease(clamp((mp - i - 0.78) / 0.22));
+      el.style.opacity = (Math.min(inn, 1 - lv)).toFixed(3);
+      el.style.transform = `translateY(${((1 - inn) * 28 - lv * 28).toFixed(1)}px)`;
+    });
+    bar.style.opacity = (clamp((mp + 0.2) / 0.3) * out).toFixed(3);
+    segs.forEach((el, i) => { el.style.transform = `scaleX(${clamp(mp - i).toFixed(3)})`; });
+    warp.style.opacity = pt > 0 ? "1" : "0";
+  };
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", onScroll);
+  onScroll();
+
+  if (!window.THREE) { canvas.style.background = "radial-gradient(circle at 70% 50%, #FFE3CF, #FFFCF9 60%)"; return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" }); }
+  catch (e) { canvas.style.background = "radial-gradient(circle at 70% 50%, #FFE3CF, #FFFCF9 60%)"; return; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+  renderer.setClearColor(0xFFFCF9, 1);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0xFFFCF9, 0.006); // hạt càng xa càng nhạt → có chiều sâu
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
+
+  // Hạt tròn mềm
+  const dotTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d"); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.35, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    const t = new THREE.CanvasTexture(c); return t;
+  })();
+
+  // Chấm tròn sắc nét (chỉ làm mịn 1–2px ở mép) để hạt không bị nhòe
+  // Chấm tròn vẽ bằng shader: mép làm mịn đúng 1px theo kích thước thật trên màn hình,
+  // chấm quá nhỏ được giữ tối thiểu 2px và giảm độ đậm tương ứng → không răng cưa, không nhấp nháy
+  const dotMats = [];
+  const makeDots = (size, opacity) => {
+    const m = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uSize: { value: size }, uScale: { value: 400 }, uOpacity: { value: opacity }, uMin: { value: 2 } }]),
+      vertexShader: `
+        uniform float uSize; uniform float uScale; uniform float uMin;
+        attribute float aScale;
+        varying vec3 vColor; varying float vPx; varying float vCov;
+        #include <fog_pars_vertex>
+        void main() {
+          vColor = color;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          float px = uSize * aScale * uScale / max(-mvPosition.z, 0.001);
+          vCov = 1.0; // không làm nhạt chấm nhỏ: mọi chấm đều đậm màu
+          vPx = max(px, uMin);
+          gl_PointSize = vPx + 1.0;
+          gl_Position = projectionMatrix * mvPosition;
+          #include <fog_vertex>
+        }`,
+      fragmentShader: `
+        uniform float uOpacity;
+        varying vec3 vColor; varying float vPx; varying float vCov;
+        #include <fog_pars_fragment>
+        void main() {
+          float d = length(gl_PointCoord - 0.5) * (vPx + 1.0);
+          float a = clamp(vPx * 0.5 - d + 0.5, 0.0, 1.0) * vCov * uOpacity;
+          if (a < 0.01) discard;
+          gl_FragColor = vec4(vColor, a);
+          #include <fog_fragment>
+        }`,
+      vertexColors: true, transparent: true, depthWrite: false, fog: true,
+    });
+    dotMats.push(m); return m;
+  };
+
+  const small = innerWidth < 760;
+  const galaxy = new THREE.Group(); scene.add(galaxy);
+
+  // Thiên hà xoắn ốc gọn: đĩa mỏng 4 cánh + khối phồng mềm ở lõi. Lõi cam đậm, nhạt dần ra mép thành màu đào rất nhạt
+  const COUNT = small ? 14000 : 30000, R = 5.2, ARMS = 4, SPIN = 1.1, RAND = 0.26, POW = 3, BULGE = 0.22;
+  const pos = new Float32Array(COUNT * 3), col = new Float32Array(COUNT * 3);
+  const cIn = new THREE.Color(0xF37021), cMid = new THREE.Color(0xF79A5E), cOut = new THREE.Color(0xF8B488), tmp = new THREE.Color();
+  const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  for (let i = 0; i < COUNT; i++) {
+    let x, y, z, k;
+    if (i < COUNT * BULGE) {
+      // khối phồng ở lõi (phân bố chuẩn, dẹt theo chiều đứng)
+      x = gauss() * 0.6; z = gauss() * 0.6; y = gauss() * 0.32; k = Math.min(1, Math.hypot(x, z) / R);
+    } else {
+      const r = 0.3 + Math.pow(Math.random(), 1.4) * (R - 0.3);
+      const arm = ((i % ARMS) / ARMS) * Math.PI * 2, sp = r * SPIN;
+      const rnd = () => Math.pow(Math.random(), POW) * (Math.random() < 0.5 ? 1 : -1) * RAND * (0.5 + r * 0.5);
+      x = Math.cos(arm + sp) * r + rnd(); z = Math.sin(arm + sp) * r + rnd();
+      y = gauss() * 0.07 * (1.4 - r / R); k = r / R;
+    }
+    pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+    if (k < 0.4) tmp.copy(cIn).lerp(cMid, k / 0.4); else tmp.copy(cMid).lerp(cOut, Math.min(1, (k - 0.4) / 0.6));
+    col[i * 3] = tmp.r; col[i * 3 + 1] = tmp.g; col[i * 3 + 2] = tmp.b;
+  }
+  const gGeo = new THREE.BufferGeometry();
+  gGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  gGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  // Chấm to nhỏ không đều: đa số nhỏ, một ít chấm lớn (tổng độ phủ giữ gần như cũ)
+  const gScale = Float32Array.from({ length: COUNT }, () => 0.8 + 1.3 * Math.pow(Math.random(), 2.5));
+  gGeo.setAttribute("aScale", new THREE.BufferAttribute(gScale, 1));
+  // Hạt tròn sắc nét, không ép vào lưới pixel (lưới 3D tạo vân nhiễu)
+  const gMat = makeDots(small ? 0.06 : 0.052, 1); // không ghi depth để icon luôn nằm trên
+  galaxy.add(new THREE.Points(gGeo, gMat));
+
+  // Lõi sáng
+  const glowTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const g = c.getContext("2d"); const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, "rgba(243,112,33,.55)"); gr.addColorStop(0.35, "rgba(243,112,33,.18)"); gr.addColorStop(1, "rgba(243,112,33,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
+  })();
+  // Quầng cam rất nhẹ ở lõi, vẽ trước hạt (renderOrder -1) để không phủ một lớp mờ lên trên
+  const core = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0.5 }));
+  core.scale.set(4, 4, 1); core.renderOrder = -1; core.visible = false; // bỏ quầng mờ ở lõi theo yêu cầu: hạt rõ, không bị phủ mờ
+
+  // Thiên hà "số hóa" thành lưới pixel khi cuộn
+  const orig = pos.slice(), grid = new Float32Array(COUNT * 3), PG = 0.1;
+  for (let i = 0; i < COUNT * 3; i += 3) { grid[i] = Math.round(orig[i] / PG) * PG; grid[i + 1] = Math.round(orig[i + 1] / PG) * PG; grid[i + 2] = Math.round(orig[i + 2] / PG) * PG; }
+  let pixMix = 0;
+  const stepPix = (target, dt) => {
+    const next = reduce ? target : pixMix + (target - pixMix) * Math.min(1, dt * 3);
+    if (Math.abs(next - pixMix) < 0.0005 && next === pixMix) return;
+    pixMix = Math.abs(next - target) < 0.001 ? target : next;
+    const arr = gGeo.attributes.position.array;
+    for (let i = 0; i < arr.length; i++) arr[i] = orig[i] + (grid[i] - orig[i]) * pixMix;
+    gGeo.attributes.position.needsUpdate = true;
+  };
+
+
+  // Hạt pixel tách khỏi thiên hà, ghép thành biểu tượng (code, chip AI, ERD, terminal, git), rồi trả về
+  const SHAPE_N = small ? 5400 : 7200, LAYERS = 2;
+  // Lấy hạt rải đều khắp thiên hà (xáo trộn ngẫu nhiên) để ghép icon: cả thiên hà chỉ thưa đi một chút, không bị thủng một vùng
+  const shuffled = Array.from({ length: COUNT }, (_, i) => i);
+  for (let i = COUNT - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); const t = shuffled[i]; shuffled[i] = shuffled[k]; shuffled[k] = t; }
+  const pick = shuffled.slice(0, SHAPE_N);
+  let pickedHidden = false;
+  const hidePicked = on => {
+    if (on === pickedHidden) return; pickedHidden = on;
+    const arr = gGeo.attributes.position.array;
+    for (const j of pick) arr[j * 3 + 1] = on ? 1e4 : orig[j * 3 + 1] + (grid[j * 3 + 1] - orig[j * 3 + 1]) * pixMix;
+    gGeo.attributes.position.needsUpdate = true;
+  };
+  const delay = Float32Array.from({ length: SHAPE_N }, () => Math.random() * 0.35);
+  const depth = Float32Array.from({ length: SHAPE_N }, (_, i) => ((i % LAYERS) / (LAYERS - 1) - 0.5) * 0.06);
+  const shArr = new Float32Array(SHAPE_N * 3), shCol = new Float32Array(SHAPE_N * 3);
+  const shGeo = new THREE.BufferGeometry();
+  shGeo.setAttribute("position", new THREE.BufferAttribute(shArr, 3));
+  shGeo.setAttribute("color", new THREE.BufferAttribute(shCol, 3));
+  // Hạt bay đi giữ đúng cỡ của hạt gốc; khi ghép thì cỡ dần đều lại để icon liền nét (xử lý trong stepShape)
+  const shScale = Float32Array.from(pick, j => gScale[j]);
+  shGeo.setAttribute("aScale", new THREE.BufferAttribute(shScale, 1));
+  const shBase = small ? 0.026 : 0.038;
+  const shMat = makeDots(shBase, 1);
+  const shPts = new THREE.Points(shGeo, shMat); shPts.visible = false; shPts.frustumCulled = false; scene.add(shPts);
+  const cA = new THREE.Color(0xF37021), cB = new THREE.Color(0xF79A5E);
+  for (let i = 0; i < SHAPE_N; i++) { cA.clone().lerp(cB, i % LAYERS === LAYERS - 1 ? 0.08 : 0.55).toArray(shCol, i * 3); }
+
+  const DRAW = [
+    g => { g.font = '700 118px "JetBrains Mono", ui-monospace, monospace'; g.fillText("</>", 120, 82); },
+    g => { rr(g, 72, 27, 96, 96, 14); g.stroke();
+           for (let k = 0; k < 4; k++) { const o = 45 + k * 20; line(g, 72, o, 56, o); line(g, 168, o, 184, o); line(g, o + 27, 27, o + 27, 11); line(g, o + 27, 123, o + 27, 139); }
+           g.font = '700 50px "Be Vietnam Pro", system-ui, sans-serif'; g.fillText("AI", 120, 78); },
+    g => { const box = (x, y, w2, h2, rows) => { g.strokeRect(x, y, w2, h2); line(g, x, y + 18, x + w2, y + 18); for (let r = 1; r < rows; r++) line(g, x + 8, y + 18 + r * 13, x + w2 - 18, y + 18 + r * 13); };
+           box(8, 10, 78, 66, 4); box(154, 10, 78, 66, 4); box(82, 98, 76, 46, 2);
+           line(g, 86, 40, 154, 40); line(g, 146, 32, 154, 40); line(g, 146, 48, 154, 40);
+           line(g, 47, 76, 47, 120); line(g, 47, 120, 82, 120); line(g, 193, 76, 193, 120); line(g, 193, 120, 158, 120); },
+    g => { rr(g, 16, 14, 208, 124, 12); g.stroke(); line(g, 16, 38, 224, 38);
+           [34, 50, 66].forEach(x => { g.beginPath(); g.arc(x, 26, 4.5, 0, 7); g.fill(); });
+           g.textAlign = "left"; g.font = '700 58px "JetBrains Mono", ui-monospace, monospace'; g.fillText(">_", 40, 92); g.textAlign = "center"; },
+    g => { line(g, 22, 100, 218, 100); g.beginPath(); g.moveTo(80, 100); g.lineTo(110, 45); g.lineTo(170, 45); g.lineTo(196, 100); g.stroke();
+           [[22, 100], [80, 100], [140, 100], [218, 100], [110, 45], [170, 45]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 11, 0, 7); g.fill(); }); },
+    g => { g.font = '700 118px "JetBrains Mono", ui-monospace, monospace'; g.fillText("{ }", 120, 82); },
+    g => { rr(g, 22, 12, 196, 100, 20); g.stroke(); g.beginPath(); g.moveTo(62, 112); g.lineTo(48, 142); g.lineTo(98, 112); g.stroke();
+           line(g, 52, 44, 186, 44); line(g, 52, 64, 156, 64); line(g, 52, 84, 112, 84); g.fillRect(124, 74, 14, 20); },
+    g => { g.beginPath(); g.arc(102, 66, 48, 0, 7); g.stroke();
+           g.lineWidth = 16; line(g, 138, 102, 182, 142); g.lineWidth = 9;
+           g.beginPath(); g.moveTo(78, 68); g.lineTo(96, 86); g.lineTo(128, 50); g.stroke(); }
+  ];
+  const MOD_ICONS = [1, 6, 2, 0, 7, 4]; // chip AI · prompt · ERD · </> · kiểm thử · git (tích hợp)
+  function rr(g, x, y, w2, h2, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w2, h2, r); else g.rect(x, y, w2, h2); }
+  function line(g, x1, y1, x2, y2) { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
+  const shapeCache = [];
+  const sampleShape = idx => {
+    if (shapeCache[idx]) return shapeCache[idx];
+    const c = document.createElement("canvas"); c.width = 240; c.height = 150;
+    const g = c.getContext("2d"); g.fillStyle = g.strokeStyle = "#fff"; g.lineWidth = idx === 2 ? 6 : 9; g.lineCap = "round"; g.lineJoin = "round";
+    g.textAlign = "center"; g.textBaseline = "middle";
+    DRAW[idx](g);
+    const d = g.getImageData(0, 0, 240, 150).data, pts = [], st = 2;
+    for (let y = 0; y < 150; y += st) for (let x = 0; x < 240; x += st) if (d[(y * 240 + x) * 4 + 3] > 120) pts.push([(x - 120) / 240, (75 - y) / 240]);
+    return (shapeCache[idx] = pts);
+  };
+  // Icon liền nét: khi pixel đã ghép xong, hiện một icon vẽ sắc nét (nhiều lớp chồng để có độ dày 3D) thay cho pixel
+  const iconTex = [];
+  const getIconTex = idx => {
+    if (iconTex[idx]) return iconTex[idx];
+    const S2 = 4, c = document.createElement("canvas"); c.width = 240 * S2; c.height = 150 * S2;
+    const g = c.getContext("2d"); g.scale(S2, S2);
+    g.fillStyle = g.strokeStyle = "#fff"; g.lineWidth = idx === 2 ? 6 : 9; g.lineCap = "round"; g.lineJoin = "round";
+    g.textAlign = "center"; g.textBaseline = "middle";
+    DRAW[idx](g);
+    const tx = new THREE.CanvasTexture(c); tx.anisotropy = 4; tx.premultiplyAlpha = true;
+    return (iconTex[idx] = tx);
+  };
+  const ICON_LAYERS = 7, iconGroup = new THREE.Group(), iconMats = [];
+  for (let l = 0; l < ICON_LAYERS; l++) {
+    const front = l === ICON_LAYERS - 1;
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, premultipliedAlpha: true, color: front ? 0xF37021 : 0xC4510D }); // mặt trước cam FPTU, thành bên cam đậm
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 150 / 240), mat);
+    mesh.position.z = (l / (ICON_LAYERS - 1) - 0.5) * 0.06; mesh.renderOrder = 2 + l;
+    iconGroup.add(mesh); iconMats.push(mat);
+  }
+  iconGroup.visible = false; scene.add(iconGroup);
+  const basis = new THREE.Matrix4(), wpos = new THREE.Vector3();
+  let iconA = 0, shownIdx = -1;
+
+  // cur: vị trí hiện tại trên mặt phẳng biểu tượng, trôi dần về tgt để biểu tượng này biến thành biểu tượng kia
+  const cur = new Float32Array(SHAPE_N * 2), tgt = new Float32Array(SHAPE_N * 2);
+  let tgtIdx = -1, cycleNo = -1, cycIdx = 0;
+  const setTarget = idx => {
+    if (idx === tgtIdx) return; tgtIdx = idx;
+    const pts = sampleShape(idx);
+    for (let i = 0; i < SHAPE_N; i++) { const q = pts[Math.floor(i / LAYERS) % pts.length]; tgt[i * 2] = q[0]; tgt[i * 2 + 1] = q[1]; }
+  };
+  const vS = new THREE.Vector3(), vT = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), toCam = new THREE.Vector3(), r2 = new THREE.Vector3(), f2 = new THREE.Vector3();
+  const stepShape = (ts, wide, dt) => {
+    if (reduce) { shPts.visible = false; return; }
+    let m = 0, idx = cycIdx;
+    const CY = 7.5, tt = ts - 2.2;
+    if (tt > 0) {
+      const n = Math.floor(tt / CY), ph = tt % CY;
+      if (n !== cycleNo) { cycleNo = n; cycIdx = n % 6; }
+      idx = cycIdx;
+      m = ph < 2.2 ? 0 : ph < 3.6 ? ease((ph - 2.2) / 1.4) : ph < 6.2 ? 1 : 1 - ease((ph - 6.2) / 1.3);
+    }
+    const mm = clamp((mp + 0.3) / 0.3);
+    if (mm > 0) { idx = MOD_ICONS[Math.max(0, Math.min(5, Math.floor(mp + 0.1)))]; m = Math.max(m, mm); }
+    if (window.__forceShape != null) { idx = window.__forceShape; m = 1; }
+    setTarget(idx);
+    if (m < 0.02) cur.set(tgt);
+    else for (let i = 0; i < cur.length; i++) cur[i] += (tgt[i] - cur[i]) * Math.min(1, dt * (2.6 + delay[i >> 1] * 10));
+    m *= 1 - clamp(pt * 2.5);
+    // Pixel đã về đúng chỗ chưa? Rồi thì làm hiện icon liền nét, chưa thì ẩn icon để thấy pixel đang bay
+    let err = 0; for (let i = 0; i < cur.length; i += 23) err = Math.max(err, Math.abs(tgt[i] - cur[i]));
+    const want = m > 0.97 && err < 0.004 ? 1 : 0;
+    if (want && shownIdx !== tgtIdx && iconA === 0) shownIdx = tgtIdx;
+    const target = shownIdx === tgtIdx ? want : 0;
+    // iconA: 0 → 1, pixel mờ dần và nhỏ lại đúng lúc icon liền nét hiện lên tại chỗ (hai hình trùng khít nên không bị bóng đôi)
+    iconA = target ? Math.min(1, iconA + dt / 0.6) : Math.max(0, iconA - dt / 0.35);
+    core.material.opacity = 0.5 * (1 - 0.5 * m);
+    hidePicked(m > 0.01);
+    if (m <= 0) { shPts.visible = false; iconGroup.visible = false; return; }
+    shPts.visible = true;
+    galaxy.updateMatrixWorld();
+    right.set(1, 0, 0).applyQuaternion(camera.quaternion); up.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    toCam.copy(camera.position).sub(galaxy.position).normalize();
+    // Khối 3D nằm ngay lõi thiên hà, có độ dày (nhiều lớp) và xoay nhẹ quanh trục đứng
+    const yaw = Math.sin(ts * 0.5) * 0.3, cs = Math.cos(yaw), sn = Math.sin(yaw);
+    r2.copy(right).multiplyScalar(cs).addScaledVector(toCam, sn);
+    f2.copy(toCam).multiplyScalar(cs).addScaledVector(right, -sn);
+    const size = wide ? 3.3 : 2.1, ctr = vT.copy(galaxy.position);
+    const cx = ctr.x, cy = ctr.y, cz = ctr.z, arr = gGeo.attributes.position.array;
+    for (let i = 0; i < SHAPE_N; i++) {
+      const j = pick[i] * 3;
+      vS.set(orig[j], orig[j + 1], orig[j + 2]).applyMatrix4(galaxy.matrixWorld);
+      const mi = clamp(m * 1.35 - delay[i]), u = cur[i * 2] * size, v = cur[i * 2 + 1] * size, d = depth[i] * size;
+      const tx = cx + r2.x * u + up.x * v + f2.x * d, ty = cy + r2.y * u + up.y * v + f2.y * d, tz = cz + r2.z * u + up.z * v + f2.z * d;
+      const g0 = gScale[pick[i]]; shScale[i] = g0 + (1 - g0) * mi;
+      shArr[i * 3] = vS.x + (tx - vS.x) * mi; shArr[i * 3 + 1] = vS.y + (ty - vS.y) * mi; shArr[i * 3 + 2] = vS.z + (tz - vS.z) * mi;
+    }
+    shGeo.attributes.position.needsUpdate = true; shGeo.attributes.aScale.needsUpdate = true;
+    const ia = iconA * iconA * (3 - 2 * iconA);
+    shMat.uniforms.uOpacity.value = 1 - ia; shMat.uniforms.uSize.value = shBase * (1 - 0.6 * ia);
+    iconGroup.visible = iconA > 0;
+    if (iconA > 0) {
+      const tex = getIconTex(shownIdx);
+      iconMats.forEach((mt, l) => { if (mt.map !== tex) { mt.map = tex; mt.needsUpdate = true; } mt.opacity = m * (l === ICON_LAYERS - 1 ? ia : ia * ia); });
+      basis.makeBasis(r2, up, f2); iconGroup.quaternion.setFromRotationMatrix(basis);
+      iconGroup.position.copy(ctr); iconGroup.scale.setScalar(size);
+    }
+  };
+
+  // Bụi sao nền
+  const S = small ? 500 : 900, sPos = new Float32Array(S * 3);
+  for (let i = 0; i < S; i++) {
+    const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, rr = 40 + Math.random() * 50, q = Math.sqrt(1 - u * u);
+    sPos[i * 3] = q * Math.cos(th) * rr; sPos[i * 3 + 1] = u * rr; sPos[i * 3 + 2] = q * Math.sin(th) * rr;
+  }
+  const sGeo = new THREE.BufferGeometry(); sGeo.setAttribute("position", new THREE.BufferAttribute(sPos, 3));
+  const stars = new THREE.Points(sGeo, new THREE.PointsMaterial({ size: 0.35, map: dotTex, color: 0xD8CFDF, transparent: true, opacity: 0.45, depthWrite: false, fog: false }));
+  scene.add(stars);
+
+  let w = 1, h = 1;
+  const resize = () => {
+    w = canvas.clientWidth || innerWidth; h = canvas.clientHeight || innerHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    const pr = renderer.getPixelRatio(); // kích thước chấm tính theo pixel thật như PointsMaterial
+    dotMats.forEach(m => { m.uniforms.uScale.value = pr * h * 0.5; m.uniforms.uMin.value = 2.4 * pr; });
+  };
+  resize(); addEventListener("resize", resize);
+
+  let mx = 0, my = 0, sx = 0, sy = 0;
+  hero.addEventListener("pointermove", e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; });
+
+  let last = performance.now(), rot = 0, running = true;
+  const lookV = new THREE.Vector3(), diveV = new THREE.Vector3(), diveO = new THREE.Vector3(), projV = new THREE.Vector3();
+  let errLogged = false;
+  const frame = now => {
+    // Một lỗi trong một khung hình không được làm chết cả vòng lặp hiệu ứng
+    try { step(now); } catch (err) { if (!errLogged) { errLogged = true; console.error("[galaxy]", err); } }
+    if (running && !reduce) requestAnimationFrame(frame);
+  };
+  const step = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const e = ease(clamp(p / 0.6));
+    if (!reduce) rot += dt * 0.045;
+    galaxy.rotation.y = rot + p * 0.9 + Math.max(0, mp) * 0.22;
+    // Camera: từ nhìn thẳng xuống (thấy trọn vòng xoắn) nghiêng dần sang góc chéo
+    const phi = reduce ? 1.0 : 0.08 + e * 0.95;
+    const dist = reduce ? 9.5 : 12 - e * 3.2;
+    sx += (mx - sx) * 0.04; sy += (my - sy) * 0.04;
+    camera.position.set(Math.sin(phi) * 0 + sx * 0.8, Math.cos(phi) * dist + sy * 0.6, Math.sin(phi) * dist);
+    // Desktop: đẩy thiên hà sang phải nhường chỗ cho chữ. Mobile: nâng thiên hà lên trên chữ
+    const wide = w > 760;
+    const k = reduce ? 1 : e;
+    camera.lookAt(0, wide ? 0 : -k * 2.5, wide ? 0 : k * 1.0);
+    galaxy.position.x = wide ? k * 3.2 : 0;
+    // Chuyển cảnh: camera lặn vào lõi thiên hà, ánh sáng trắng nở ra từ lõi rồi phủ kín sang phần giới thiệu
+    if (pt > 0 && !reduce) {
+      const dz = ease(pt);
+      galaxy.position.x *= 1 - dz;
+      lookV.set(0, wide ? 0 : -k * 2.5, wide ? 0 : k * 1.0).lerp(galaxy.position, dz);
+      camera.position.lerp(diveV.copy(galaxy.position).add(diveO.set(0, 1.4, 1.2)), dz * 0.8);
+      camera.lookAt(lookV);
+      camera.updateMatrixWorld();
+      projV.copy(galaxy.position).project(camera);
+      warp.style.setProperty("--cx", ((projV.x + 1) * 50).toFixed(2) + "%");
+      warp.style.setProperty("--cy", ((1 - projV.y) * 50).toFixed(2) + "%");
+      warp.style.setProperty("--r", (-30 + Math.pow(pt, 2) * 135).toFixed(2) + "vmax");
+    }
+    stars.rotation.y = rot * 0.15;
+    stepPix(0, dt); // thiên hà giữ dạng tự nhiên
+    camera.updateMatrixWorld();
+    stepShape(now / 1000, wide, dt);
+    if (heroOn || reduce) renderer.render(scene, camera);
+  };
+  // Nếu trình duyệt thu hồi WebGL (máy yếu, nhiều tab), xin cấp lại thay vì để canvas đứng hình
+  canvas.addEventListener("webglcontextlost", e => e.preventDefault());
+  if (reduce) { addEventListener("resize", () => requestAnimationFrame(frame)); addEventListener("scroll", () => requestAnimationFrame(frame), { passive: true }); }
+  requestAnimationFrame(frame);
+})();
+</script>
