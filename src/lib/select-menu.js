@@ -108,6 +108,9 @@ export function enhanceSelect(select) {
 
   function open() {
     if (!list.hidden || select.disabled) return;
+    // A modal <dialog> sits in the top layer, so the listbox must live inside it to show above
+    const host = wrap.closest("dialog") || document.body;
+    if (list.parentNode !== host) host.append(list);
     build();
     list.hidden = false;
     btn.setAttribute("aria-expanded", "true");

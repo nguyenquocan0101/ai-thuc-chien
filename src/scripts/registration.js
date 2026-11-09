@@ -1,6 +1,7 @@
 import { I18N, LANG, t, esc, pick } from "./i18n.js";
 import { COURSE } from "./course.js";
 import { firebaseConfig } from "../lib/firebase-config.js";
+import { isAdminEmail } from "../lib/admins.js";
 
 /* ===== Đăng ký: Google (@fpt.edu.vn) → thông tin sinh viên → cam kết ===== */
 // Cấu hình ở src/lib/firebase-config.js. Để null thì trang dùng cửa sổ mô phỏng (bản xem trước, không gửi dữ liệu đi đâu).
@@ -11,13 +12,10 @@ const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").t
 const SCHOOL_DOMAIN = "fpt.edu.vn";
 Object.assign(I18N.vi, {
   "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, chỉ cần tài khoản @fpt.edu.vn.",
-  "r.s3": "Cam kết tham gia", "r.close": "Đóng",
+  "r.close": "Đóng",
   "r.google": "Đăng ký với Google",
   "r.eDomain": "Tài khoản này không phải mail trường. Hãy đăng nhập bằng email @fpt.edu.vn.", "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
   "r.verified": "Đã xác minh", "r.switch": "Đổi tài khoản", "r.major": "Ngành học",
-  "r.rulesOpen": "Bấm để đọc 5 điều lệ trước khi xác nhận", "r.rulesRead": "Đã đọc", "r.rulesMob": "Mở trang điều lệ",
-  "r.hintRead": "Đọc điều lệ Cam kết tham gia để mở ô xác nhận.",
-  "r.back": "Quay lại form", "r.agree": "Tôi đã đọc, quay lại form",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
   "r.sumId": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
   "r.idFromMail": "Gợi ý từ email trường, sửa lại nếu chưa đúng",
@@ -25,13 +23,10 @@ Object.assign(I18N.vi, {
 });
 Object.assign(I18N.en, {
   "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, all you need is your @fpt.edu.vn account.",
-  "r.s3": "Attendance commitment", "r.close": "Close",
+  "r.close": "Close",
   "r.google": "Register with Google",
   "r.eDomain": "That isn't a school account. Please sign in with your @fpt.edu.vn email.", "r.eFail": "Sign-in didn't go through. Please try again.",
   "r.verified": "Verified", "r.switch": "Switch account", "r.major": "Major",
-  "r.rulesOpen": "Open to read the 5 rules before confirming", "r.rulesRead": "Read", "r.rulesMob": "Open the rules page",
-  "r.hintRead": "Read the attendance commitment to unlock the checkbox.",
-  "r.back": "Back to the form", "r.agree": "I've read it, back to the form",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
   "r.sumId": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
   "r.idFromMail": "Suggested from your school email. Edit it if it's wrong",
@@ -40,18 +35,12 @@ Object.assign(I18N.en, {
 export function initRegistration() {
   const $ = id => document.getElementById(id);
   const form = $("regForm"), dlg = $("regDlg"), paneI = $("rInfo"), done = $("done");
-  const btn = $("submitBtn"), cPledge = $("c-pledge"), hint = $("submitHint"), rules = $("rules"), rPage = $("rulesPage"), gMock = $("gMock");
-  const mob = matchMedia("(max-width: 720px)");
-  // Popup form là <dialog> (top layer): trang điều lệ phải nằm trong dialog mới hiện được bên trên
-  dlg.appendChild(rPage); document.body.appendChild(gMock);
-  let user = null, read = false, lastFocus = null;
-  const termBox = $("termPills");
-  for (let i = 1; i <= 9; i++) {
-    const l = document.createElement("label"); l.className = "pill";
-    l.innerHTML = `<input type="radio" name="term" value="${i}"><span aria-hidden="true">${i}</span>`;
-    termBox.appendChild(l);
-  }
-  const labelTerms = () => termBox.querySelectorAll("input").forEach(r => r.setAttribute("aria-label", t("f.termN") + r.value));
+  const btn = $("submitBtn"), cPledge = $("c-pledge"), hint = $("submitHint"), gMock = $("gMock");
+  const majorSel = $("f-major"), termSel = $("f-term");
+  document.body.appendChild(gMock);
+  let user = null;
+  for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
+  const labelTerms = () => [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
   labelTerms(); addEventListener("langchange", labelTerms);
   // Tên tài khoản FPT có đuôi khóa/cơ sở: "Nguyen Quoc An (K18 HCM)" → "Nguyen Quoc An"
   const shortName = n => String(n || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(n || "").trim();
@@ -61,7 +50,11 @@ export function initRegistration() {
   const fbSignIn = async () => {
     const { signInWithGoogle, signOutUser } = fbMod || await fb();
     const u = await signInWithGoogle({ hd: SCHOOL_DOMAIN });
-    if (!isSchool(u.email)) { await signOutUser(); throw "domain"; }
+    if (!isSchool(u.email)) {
+      // Admin dùng Gmail: giữ phiên đăng nhập và chuyển sang trang quản trị
+      if (isAdminEmail(u.email)) { location.assign("/admin/"); return new Promise(() => {}); }
+      await signOutUser(); throw "domain";
+    }
     return { uid: u.uid, name: u.displayName || u.email.split("@")[0], email: u.email, photo: u.photoURL };
   };
   // Đã đăng ký trước đó: điền lại form để sửa
@@ -70,8 +63,8 @@ export function initRegistration() {
       const { getRegistration } = await fb(), r = await getRegistration(user.uid);
       if (!r) return;
       $("f-id").value = r.studentId || "";
-      if (r.major) form.elements.major.value = r.major;
-      if (r.term) form.elements.term.value = String(r.term);
+      if (r.major) majorSel.value = r.major;
+      if (r.term) termSel.value = String(r.term);
       setIdHint(r.studentId === suggestedId);
     } catch (x) { console.warn("prefill", x); }
   };
@@ -88,7 +81,7 @@ export function initRegistration() {
   const openForm = () => { if (!dlg.open) dlg.showModal(); (paneI.hidden ? done : $("f-id")).focus(); };
   const renderAcct = () => {
     if (!user) return;
-    $("acName").textContent = user.name; $("acMail").textContent = user.email;
+    $("acName").textContent = shortName(user.name); $("acMail").textContent = user.email;
     const av = $("acAv");
     av.textContent = (shortName(user.name).split(/\s+/).pop() || "?")[0].toUpperCase();
     if (user.photo) {
@@ -98,13 +91,7 @@ export function initRegistration() {
       img.src = user.photo;
     }
   };
-  const sync = () => {
-    cPledge.disabled = !read;
-    $("rulesSum").textContent = read ? "✓ " + t("r.rulesRead") : t(mob.matches ? "r.rulesMob" : "r.rulesOpen");
-    rules.classList.toggle("read", read);
-    const ok = read && cPledge.checked; btn.disabled = !ok;
-    hint.textContent = !read ? t("r.hintRead") : t(ok ? "f.hintOn" : "f.hintOff");
-  };
+  const sync = () => { const ok = cPledge.checked; btn.disabled = !ok; hint.textContent = t(ok ? "f.hintOn" : "f.hintOff"); };
   // Trả về "ok" | "cancel" | "error"
   const signIn = async () => {
     const e = $("e-login"); e.textContent = ""; e.dataset.key = "";
@@ -113,9 +100,7 @@ export function initRegistration() {
       if (x === "cancel" || x?.code === "auth/popup-closed-by-user" || x?.code === "auth/cancelled-popup-request") return "cancel";
       e.dataset.key = x === "domain" ? "r.eDomain" : "r.eFail"; e.textContent = t(e.dataset.key); return "error";
     }
-    renderAcct(); suggestId(); showPane(paneI);
-    if (!mob.matches) rules.open = true; // máy tính: mở sẵn điều lệ cam kết
-    sync();
+    renderAcct(); suggestId(); showPane(paneI); sync();
     if (FIREBASE_CONFIG) prefill();
     return "ok";
   };
@@ -142,31 +127,7 @@ export function initRegistration() {
     user = null; dlg.close();
   });
 
-  // Điều lệ: máy tính mở dạng dropdown, điện thoại mở sang trang riêng
-  rules.addEventListener("toggle", () => { if (rules.open) { read = true; sync(); } });
-  rules.querySelector("summary").addEventListener("click", ev => {
-    if (!mob.matches) return;
-    ev.preventDefault(); openPage();
-  });
-  const openPage = () => {
-    lastFocus = document.activeElement; rPage.hidden = false; rPage.scrollTop = 0;
-    try { history.pushState({ rules: 1 }, "", "#cam-ket"); } catch (e) {}
-    $("rpBack").focus();
-  };
-  const closePage = (fromPop) => {
-    if (rPage.hidden) return;
-    rPage.hidden = true; read = true; sync();
-    if (!fromPop) { try { if (history.state && history.state.rules) history.back(); } catch (e) {} }
-    (lastFocus || cPledge).focus();
-  };
-  $("rpBack").addEventListener("click", () => closePage(false));
-  $("rpAgree").addEventListener("click", () => { closePage(false); cPledge.checked = true; sync(); });
-  addEventListener("popstate", () => closePage(true));
-  // Esc khi đang mở trang điều lệ: chỉ đóng trang điều lệ, không đóng popup form
-  addEventListener("keydown", e => { if (e.key === "Escape") { if (!rPage.hidden) { e.preventDefault(); closePage(false); } else if (!gMock.hidden) $("gmCancel").click(); } });
-  // Nút Back Android cũng gửi "cancel" cho dialog: đang ở trang điều lệ thì chỉ đóng trang đó
-  dlg.addEventListener("cancel", e => { if (!rPage.hidden) { e.preventDefault(); closePage(false); } });
-  mob.addEventListener && mob.addEventListener("change", () => { if (mob.matches) rules.open = false; sync(); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && !gMock.hidden) $("gmCancel").click(); });
   cPledge.addEventListener("change", sync);
 
   const idInput = $("f-id"), idHint = $("h-id");
@@ -183,37 +144,37 @@ export function initRegistration() {
     idInput.value = idInput.value.toUpperCase().replace(/\s/g, "");
     if (idInput.value !== suggestedId) setIdHint(false);
   });
-  // MSSV là ô nhập; ngành và kỳ là nhóm radio (form.elements.x.value lấy giá trị đang chọn)
-  const radioFocus = name => { const rs = [...form.elements[name]]; (rs.find(r => r.checked) || rs[0]).focus(); };
+  // select đã được bọc bởi dropdown dùng chung: .value và .focus() vẫn đi qua select gốc
   const fields = {
-    id: { box: idInput.closest(".field"), inv: idInput, get: () => idInput.value, rule: v => /^[A-Z]{2}\d{6}$/.test(v.trim()) ? "" : "e.id", focus: () => idInput.focus() },
-    major: { box: $("f-major"), inv: $("f-major"), get: () => form.elements.major.value, rule: v => v ? "" : "e.major", focus: () => radioFocus("major") },
-    term: { box: $("f-term"), inv: $("f-term"), get: () => form.elements.term.value, rule: v => v ? "" : "e.term", focus: () => radioFocus("term") },
+    id: { el: idInput, rule: v => /^[A-Z]{2}\d{6}$/.test(v.trim()) ? "" : "e.id" },
+    major: { el: majorSel, rule: v => v ? "" : "e.major" },
+    term: { el: termSel, rule: v => v ? "" : "e.term" },
   };
   const check = k => {
-    const f = fields[k], key = f.rule(f.get());
-    f.box.classList.toggle("bad", !!key); f.inv.setAttribute("aria-invalid", key ? "true" : "false");
+    const { el, rule } = fields[k], key = rule(el.value), box = el.closest(".field");
+    box.classList.toggle("bad", !!key); el.setAttribute("aria-invalid", key ? "true" : "false");
     const er = $("e-" + k); er.textContent = key ? t(key) : ""; er.dataset.key = key; return !key;
   };
+  const isBad = k => fields[k].el.closest(".field").classList.contains("bad");
   idInput.addEventListener("blur", () => { if (idInput.value) check("id"); });
-  idInput.addEventListener("input", () => { if (fields.id.box.classList.contains("bad")) check("id"); });
-  ["major", "term"].forEach(k => fields[k].box.addEventListener("change", () => { if (fields[k].box.classList.contains("bad")) check(k); }));
+  idInput.addEventListener("input", () => { if (isBad("id")) check("id"); });
+  ["major", "term"].forEach(k => fields[k].el.addEventListener("change", () => { if (isBad(k)) check(k); }));
   const renderDone = () => {
-    const major = form.querySelector('input[name="major"]:checked'), last = shortName(user.name).split(/\s+/).pop();
+    const last = shortName(user.name).split(/\s+/).pop();
     $("doneTitle").textContent = t("d.title")(last);
     $("doneText").innerHTML = t("d.text")(esc(user.email), pick(COURSE.resultDate) ? esc(pick(COURSE.resultDate)) : "");
-    $("doneSum").innerHTML = [[t("r.sumId"), idInput.value], [t("r.sumMajor"), major ? major.nextElementSibling.textContent : ""], [t("r.sumTerm"), t("f.termN") + form.elements.term.value]].map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("");
+    $("doneSum").innerHTML = [[t("r.sumId"), idInput.value], [t("r.sumMajor"), majorSel.selectedOptions[0]?.textContent || ""], [t("r.sumTerm"), t("f.termN") + termSel.value]].map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("");
   };
   let saving = false;
   form.addEventListener("submit", async e => {
     e.preventDefault(); if (!user || saving) return;
     const keys = Object.keys(fields), bad = keys[keys.map(check).indexOf(false)];
-    if (bad) { fields[bad].focus(); return; }
+    if (bad) { fields[bad].el.focus(); return; }
     if (FIREBASE_CONFIG) {
       saving = true; btn.disabled = true; hint.textContent = t("r.saving");
       try {
         const { saveRegistration } = await fb();
-        await saveRegistration(user, { studentId: idInput.value.trim(), major: form.elements.major.value, term: form.elements.term.value, pledge: true, lang: LANG });
+        await saveRegistration(user, { studentId: idInput.value.trim(), major: majorSel.value, term: termSel.value, pledge: true, lang: LANG });
       } catch (x) {
         console.error("saveRegistration", x); saving = false; sync(); hint.textContent = t("r.eSave"); return;
       }

@@ -95,30 +95,30 @@
               <span class="err" id="e-id"></span>
             </div>
 
-            <fieldset class="field pick" id="f-major" role="radiogroup" aria-describedby="e-major">
-              <legend><span data-i18n="r.major"></span> <span class="req">*</span></legend>
-              <div class="chips">
-                <label class="chip"><input type="radio" name="major" value="SE"><span data-i18n="m.se"></span></label>
-                <label class="chip"><input type="radio" name="major" value="AI"><span data-i18n="m.ai"></span></label>
-                <label class="chip"><input type="radio" name="major" value="IA"><span data-i18n="m.ia"></span></label>
-                <label class="chip"><input type="radio" name="major" value="IS"><span data-i18n="m.is"></span></label>
-                <label class="chip"><input type="radio" name="major" value="OTHER"><span data-i18n="m.other"></span></label>
+            <div class="pick-row">
+              <div class="field">
+                <label for="f-major"><span data-i18n="r.major"></span> <span class="req">*</span></label>
+                <select id="f-major" name="major" aria-describedby="e-major" data-placeholder>
+                  <option value="" data-i18n="f.majorPick"></option>
+                  <option value="SE" data-i18n="m.se"></option>
+                  <option value="AI" data-i18n="m.ai"></option>
+                  <option value="IA" data-i18n="m.ia"></option>
+                  <option value="IS" data-i18n="m.is"></option>
+                  <option value="OTHER" data-i18n="m.other"></option>
+                </select>
+                <span class="err" id="e-major"></span>
               </div>
-              <span class="err" id="e-major"></span>
-            </fieldset>
+              <div class="field">
+                <label for="f-term"><span data-i18n="f.term"></span> <span class="req">*</span></label>
+                <select id="f-term" name="term" aria-describedby="e-term" data-placeholder><option value="" data-i18n="f.termPick"></option></select>
+                <span class="err" id="e-term"></span>
+              </div>
+            </div>
 
-            <fieldset class="field pick" id="f-term" role="radiogroup" aria-describedby="e-term">
-              <legend><span data-i18n="f.term"></span> <span class="req">*</span></legend>
-              <div class="pills" id="termPills"></div>
-              <span class="err" id="e-term"></span>
-            </fieldset>
-
-            <div class="rules-box">
-              <details class="rules" id="rules">
-                <summary><span class="rb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/></svg></span><span class="rb-t"><b data-i18n="f.pledge"></b><small id="rulesSum"></small></span><i class="chev" aria-hidden="true"></i></summary>
-                <div class="rules-body" data-i18n-html="f.pledgeText"></div>
-              </details>
-              <label class="tick"><input type="checkbox" id="c-pledge" disabled> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
+            <div class="pledge-box">
+              <b data-i18n="f.pledge"></b>
+              <div class="pledge-list" data-i18n-html="f.pledgeText"></div>
+              <label class="tick"><input type="checkbox" id="c-pledge"> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
             </div>
 
             <div class="submit-row">
@@ -138,11 +138,6 @@
         </form>
       </dialog>
 
-      <div class="rules-page" id="rulesPage" hidden role="dialog" aria-modal="true" aria-labelledby="rpT">
-        <div class="rp-bar"><button type="button" class="rp-back" id="rpBack"><span aria-hidden="true">←</span> <span data-i18n="r.back"></span></button><span class="rp-step" data-i18n="r.s3"></span></div>
-        <div class="rp-body"><span class="eyebrow" data-i18n="reg.eyebrow"></span><h2 id="rpT" data-i18n="f.pledge"></h2><div class="rules-body" data-i18n-html="f.pledgeText"></div></div>
-        <div class="rp-foot"><button type="button" class="btn btn-primary" id="rpAgree" data-i18n="r.agree"></button></div>
-      </div>
 
       <div class="g-mock" id="gMock" hidden role="dialog" aria-modal="true" aria-labelledby="gmT">
         <div class="gm-card">
