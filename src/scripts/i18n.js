@@ -58,7 +58,7 @@ export const I18N = {
     "doc.title": "AI in Practice FA26",
     "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
     "hero.sub": "From requirements to working software. AI assists every step; you verify and decide.",
-    "hero.cta": "Register for free", "hero.cta2": "See the program", "hero.scroll": "Scroll to explore",
+    "hero.cta": "Register now", "hero.cta2": "See the program", "hero.scroll": "Scroll to explore",
     "val.eyebrow": "The program", "val.title": "Learn to build software with AI as a teammate.",
     "val.k1": "Process", "val.h1": "More than a tool", "val.p1": "Bring AI into every step of the process: requirements, design, coding and testing. The goal is knowing where AI helps, not memorising one tool.",
     "val.k2": "Verification", "val.h2": "AI suggests, you decide", "val.p2": "AI can be wrong, invent APIs or miss edge cases. You practise writing tests, reading diffs and reviewing code to verify everything it produces, and you own the final call.",
