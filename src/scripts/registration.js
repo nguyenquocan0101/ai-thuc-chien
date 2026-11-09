@@ -1,6 +1,13 @@
+import { I18N, LANG, t, esc, pick } from "./i18n.js";
+import { COURSE } from "./course.js";
+import { firebaseConfig } from "../lib/firebase-config.js";
+
 /* ===== Đăng ký: Google (@fpt.edu.vn) → thông tin sinh viên → cam kết ===== */
-// Khi có Firebase: dán firebaseConfig vào FIREBASE_CONFIG. Để null thì trang dùng cửa sổ mô phỏng (bản xem trước, không gửi dữ liệu đi đâu).
-const FIREBASE_CONFIG = window.FIREBASE_CONFIG || null;
+// Cấu hình ở src/lib/firebase-config.js. Để null thì trang dùng cửa sổ mô phỏng (bản xem trước, không gửi dữ liệu đi đâu).
+const FIREBASE_CONFIG = firebaseConfig;
+// SDK tách chunk riêng, nạp sẵn khi trang rảnh để bấm "Tiếp tục với Google" mở popup ngay (không bị chặn popup)
+let fbMod = null;
+const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").then(m => (fbMod = m));
 const SCHOOL_DOMAIN = "fpt.edu.vn";
 Object.assign(I18N.vi, {
   "r.title": "Đăng ký ngay", "r.lead": "Miễn phí cho sinh viên FPT khối IT. Đăng nhập bằng tài khoản Google @fpt.edu.vn để bắt đầu.",
@@ -16,6 +23,7 @@ Object.assign(I18N.vi, {
   "r.back": "Quay lại form", "r.agree": "Tôi đã đọc, quay lại form",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
   "r.sumId": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
+  "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
   "r.title": "Register now", "r.lead": "Free for FPT students in IT majors. Sign in with your @fpt.edu.vn Google account to start.",
@@ -31,25 +39,35 @@ Object.assign(I18N.en, {
   "r.back": "Back to the form", "r.agree": "I've read it, back to the form",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
   "r.sumId": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
+  "r.saving": "Saving your registration…", "r.eSave": "Couldn't save your registration. Check your connection and submit again.",
 });
-(function () {
+export function initRegistration() {
   const $ = id => document.getElementById(id);
   const form = $("regForm"), paneL = $("rLogin"), paneI = $("rInfo"), done = $("done"), steps = [...document.querySelectorAll("#regSteps li")];
   const btn = $("submitBtn"), cPledge = $("c-pledge"), hint = $("submitHint"), rules = $("rules"), rPage = $("rulesPage"), gMock = $("gMock");
   const mob = matchMedia("(max-width: 720px)");
   document.body.appendChild(rPage); document.body.appendChild(gMock); // ra ngoài section để luôn nằm trên header
   let user = null, read = false, lastFocus = null;
+  const termSel = $("f-term");
+  for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
+  const labelTerms = () => [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
+  labelTerms(); addEventListener("langchange", labelTerms);
   const isSchool = e => new RegExp("^[^\\s@]+@" + SCHOOL_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(String(e || "").trim());
 
   // --- Firebase thật (chỉ chạy khi có FIREBASE_CONFIG) ---
-  const loadJs = src => new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
   const fbSignIn = async () => {
-    if (!window.firebase) { await loadJs("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"); await loadJs("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"); }
-    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({ hd: SCHOOL_DOMAIN, prompt: "select_account" });
-    const r = await firebase.auth().signInWithPopup(p);
-    if (!isSchool(r.user.email)) { await firebase.auth().signOut(); throw "domain"; }
-    return { name: r.user.displayName || r.user.email.split("@")[0], email: r.user.email, photo: r.user.photoURL };
+    const { signInWithGoogle, signOutUser } = fbMod || await fb();
+    const u = await signInWithGoogle({ hd: SCHOOL_DOMAIN });
+    if (!isSchool(u.email)) { await signOutUser(); throw "domain"; }
+    return { uid: u.uid, name: u.displayName || u.email.split("@")[0], email: u.email, photo: u.photoURL };
+  };
+  // Đã đăng ký trước đó: điền lại form để sửa
+  const prefill = async () => {
+    try {
+      const { getRegistration } = await fb(), r = await getRegistration(user.uid);
+      if (!r) return;
+      $("f-id").value = r.studentId || ""; $("f-major").value = r.major || ""; $("f-term").value = r.term || "";
+    } catch (x) { console.warn("prefill", x); }
   };
   // --- Bản xem trước: cửa sổ mô phỏng ---
   const mockSignIn = () => new Promise((ok, no) => {
@@ -80,8 +98,9 @@ Object.assign(I18N.en, {
     try { user = FIREBASE_CONFIG ? await fbSignIn() : await mockSignIn(); }
     catch (x) { if (x !== "cancel") { e.dataset.key = x === "domain" ? "r.eDomain" : "r.eFail"; e.textContent = t(e.dataset.key); } return; }
     renderAcct(); showPane(paneI); sync(); $("f-id").focus();
+    if (FIREBASE_CONFIG) prefill();
   });
-  $("acSwitch").addEventListener("click", () => { if (FIREBASE_CONFIG && window.firebase) firebase.auth().signOut(); user = null; showPane(paneL); setStep(1); $("gBtn").focus(); });
+  $("acSwitch").addEventListener("click", () => { if (FIREBASE_CONFIG) fb().then(m => m.signOutUser()); user = null; showPane(paneL); setStep(1); $("gBtn").focus(); });
 
   // Điều lệ: máy tính mở dạng dropdown, điện thoại mở sang trang riêng
   rules.addEventListener("toggle", () => { if (rules.open) { read = true; sync(); } });
@@ -122,10 +141,21 @@ Object.assign(I18N.en, {
     $("doneText").innerHTML = t("d.text")(esc(user.email), pick(COURSE.resultDate) ? esc(pick(COURSE.resultDate)) : "");
     $("doneSum").innerHTML = [[t("r.sumId"), idInput.value], [t("r.sumMajor"), sel.options[sel.selectedIndex].text], [t("r.sumTerm"), t("f.termN") + $("f-term").value]].map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("");
   };
-  form.addEventListener("submit", e => {
-    e.preventDefault(); if (!user) return;
+  let saving = false;
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); if (!user || saving) return;
     const ids = Object.keys(ruleF), bad = ids[ids.map(check).indexOf(false)];
     if (bad) { $(bad).focus(); return; }
+    if (FIREBASE_CONFIG) {
+      saving = true; btn.disabled = true; hint.textContent = t("r.saving");
+      try {
+        const { saveRegistration } = await fb();
+        await saveRegistration(user, { studentId: idInput.value.trim(), major: $("f-major").value, term: $("f-term").value, pledge: true, lang: LANG });
+      } catch (x) {
+        console.error("saveRegistration", x); saving = false; sync(); hint.textContent = t("r.eSave"); return;
+      }
+      saving = false; sync();
+    }
     renderDone(); showPane(done); setStep(4); done.focus();
   });
   $("againBtn").addEventListener("click", () => { showPane(paneI); sync(); idInput.focus(); });
@@ -134,5 +164,5 @@ Object.assign(I18N.en, {
     if (!done.hidden) renderDone();
   });
   setStep(1); sync();
-})();
-
+  if (FIREBASE_CONFIG) setTimeout(() => fb().catch(x => console.warn("firebase preload", x)), 1500);
+}

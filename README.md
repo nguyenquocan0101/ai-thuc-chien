@@ -1,40 +1,63 @@
 # AI Thực Chiến – FA26
 
-Landing page cho chương trình **AI-Augmented Software Engineering: From Requirements to Working Software** (FPT University). Trang tĩnh, một file HTML, deploy trên Vercel.
+Landing page cho chương trình **AI-Augmented Software Engineering: From Requirements to Working Software** (FPT University). Vite + JavaScript thuần, đăng ký ghi thẳng vào Firestore, deploy trên Vercel.
 
 Bản đang chạy: https://ai-thuc-chien-ashen.vercel.app
+
+## Chạy và build
+
+Cần Node.js 20 trở lên.
+
+```bash
+npm install
+npm run dev       # http://localhost:5173  (trang quản trị: /admin)
+npm run build     # ra dist/
+npm run preview   # chạy thử bản build
+```
 
 ## Cấu trúc
 
 | Đường dẫn | Nội dung |
 |---|---|
-| `public/index.html` | Trang đã ghép, Vercel phục vụ trực tiếp |
-| `public/config.js` | Cấu hình Firebase (`window.FIREBASE_CONFIG`) |
-| `src/landing/index.html` | Khung trang gốc: header, FAQ, từ điển VI/EN, form cũ |
-| `src/combo/*` | Phần ghép đè: hero 3D (`hero3d.js`), "Soi code AI" (`quiz.js`), chữ VI/EN (`copy.js`), form đăng ký (`reg.html`, `reg.js`), CSS (`combo.css`) |
-| `src/build.py` | Ghép `src/` thành `public/index.html` |
+| `index.html` | Trang landing: header, hero, chương trình, 6 chặng, form đăng ký, FAQ |
+| `admin/index.html` | Trang `/admin`: danh sách sinh viên đã đăng ký |
+| `src/main.js` | Điểm vào của landing, gọi các module theo đúng thứ tự |
+| `src/admin.js` | Logic trang quản trị: đăng nhập, xem realtime, lọc, xuất CSV |
+| `src/scripts/i18n.js` | Từ điển VI/EN, `applyLang()`, nút đổi ngôn ngữ |
+| `src/scripts/course.js` | Thông tin chương trình (thời gian, phòng, hạn đăng ký…) |
+| `src/scripts/registration.js` | Form đăng ký: Google @fpt.edu.vn → thông tin sinh viên → cam kết → lưu Firestore |
+| `src/scripts/showcase/` | Hero 3D (`hero3d.js`), "Soi code AI" (`quiz.js`), chữ 6 chặng (`copy.js`) |
+| `src/scripts/glass.js`, `reveal.js` | Tinh chỉnh liquid glass, hiệu ứng hiện dần |
+| `src/lib/firebase.js` | Khởi tạo Firebase, đăng nhập Google, đọc/ghi `registrations` |
+| `src/lib/firebase-config.js` | Cấu hình web của project `ai-thuc-chien-fa26` |
+| `src/lib/admins.js` | Email được vào `/admin` (phải khớp `firestore.rules`) |
+| `src/styles/` | CSS: `base.css`, `hero-stage.css`, `showcase.css`, `admin.css` |
+| `firestore.rules`, `firebase.json`, `.firebaserc` | Luật bảo mật Firestore và cấu hình deploy |
 
-## Sửa và build
+## Firebase
 
-```bash
-cd src
-python3 build.py   # ghi đè public/index.html
-```
+Project: `ai-thuc-chien-fa26` (Firestore ở `asia-southeast1`).
 
-Sau đó commit cả `src/` và `public/`.
+Mỗi sinh viên có một document `registrations/{uid}`. Các trường: `uid`, `name`, `email`, `studentId`, `major`, `term`, `pledge`, `lang`, `createdAt`, `updatedAt`. Gửi lại form sẽ cập nhật đúng document đó, không tạo bản trùng.
 
-## Đăng nhập Google (Firebase)
+`firestore.rules` bảo vệ dữ liệu:
 
-1. Tạo project trên Firebase Console, bật **Authentication → Sign-in method → Google**.
-2. **Project settings → Your apps → Web** để lấy `firebaseConfig`, dán vào `public/config.js`:
-   ```js
-   window.FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", projectId: "...", appId: "..." };
-   ```
-3. **Authentication → Settings → Authorized domains**: thêm tên miền Vercel.
+- Sinh viên chỉ ghi được document của chính mình, chỉ khi đăng nhập bằng email `@fpt.edu.vn`. Dữ liệu phải hợp lệ: MSSV dạng `SE123456`, ngành nằm trong danh sách, kỳ từ 1 đến 9.
+- Chỉ email trong danh sách admin mới đọc được toàn bộ danh sách.
 
-Khi `FIREBASE_CONFIG` là `null`, nút Google mở cửa sổ mô phỏng (bản xem trước). Chỉ tài khoản `@fpt.edu.vn` được đi tiếp. Thông tin đăng ký hiện chưa được lưu ở đâu.
+Thêm admin:
+
+1. Sửa `src/lib/admins.js` và `firestore.rules`.
+2. Chạy `npm run deploy:rules`.
+
+Cài đặt một lần trên Firebase Console (CLI không làm được):
+
+1. **Authentication → Get started → Sign-in method → Google → Enable**.
+2. **Authentication → Settings → Authorized domains**: thêm `ai-thuc-chien-ashen.vercel.app` (và tên miền riêng nếu có). `localhost` đã có sẵn.
+
+Đặt `firebaseConfig = null` trong `src/lib/firebase-config.js` thì nút Google mở cửa sổ mô phỏng (bản xem trước, không lưu gì).
 
 ## Thư viện ngoài
 
-- three.js r128 (cdnjs), @real-human/liquid-glass 1.2.0 (jsdelivr)
+- firebase (npm), three.js r128 (cdnjs), @real-human/liquid-glass 1.2.0 (jsdelivr)
 - Logo công nghệ: Simple Icons 13.21.0 (CC0)

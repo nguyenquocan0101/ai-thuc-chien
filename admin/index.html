@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Quản trị · AI Thực Chiến FA26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/src/styles/admin.css">
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="/">AI Thực Chiến <span>FA26 · Quản trị</span></a>
+    <div class="who" id="who" hidden>
+      <span id="whoMail"></span>
+      <button class="btn btn-ghost btn-sm" type="button" id="signOutBtn">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card center" id="vLoading">
+    <p class="muted">Đang tải…</p>
+  </section>
+
+  <section class="card center" id="vLogin" hidden>
+    <h1>Danh sách đăng ký</h1>
+    <p class="muted">Đăng nhập bằng tài khoản Google của ban tổ chức để xem sinh viên đã đăng ký.</p>
+    <button class="btn btn-primary" type="button" id="signInBtn">Đăng nhập với Google</button>
+    <p class="err" id="loginErr" role="alert"></p>
+  </section>
+
+  <section class="card center" id="vDenied" hidden>
+    <h1>Không có quyền truy cập</h1>
+    <p class="muted">Tài khoản <b id="deniedMail"></b> không nằm trong danh sách quản trị.</p>
+    <button class="btn btn-primary" type="button" id="switchBtn">Đăng nhập tài khoản khác</button>
+  </section>
+
+  <section id="vList" hidden>
+    <div class="head">
+      <div>
+        <h1>Danh sách đăng ký</h1>
+        <p class="muted" id="summary"></p>
+      </div>
+      <div class="tools">
+        <input type="search" id="q" placeholder="Tìm tên, email, MSSV…" aria-label="Tìm kiếm">
+        <select id="fMajor" aria-label="Lọc theo ngành"><option value="">Tất cả ngành</option></select>
+        <button class="btn btn-ghost" type="button" id="csvBtn">Xuất CSV</button>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <p class="err" id="listErr" role="alert"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Ngành</th><th>Kỳ</th><th>Đăng ký lúc</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty muted" id="empty" hidden>Chưa có sinh viên nào đăng ký.</p>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="/src/admin.js"></script>
+</body>
+</html>

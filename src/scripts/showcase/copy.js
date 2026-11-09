@@ -1,3 +1,6 @@
+import { I18N, applyLang } from "../i18n.js";
+
+export function applyCopy() {
   /* ---------- Chữ 6 bước viết lại cho sinh viên (ghi đè từ điển gốc) ---------- */
   if (typeof I18N !== "undefined") {
     Object.assign(I18N.vi, {
@@ -32,3 +35,4 @@
     });
     if (typeof applyLang === "function") applyLang();
   }
+}

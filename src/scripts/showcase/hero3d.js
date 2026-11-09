@@ -1,3 +1,8 @@
+import { LANG } from "../i18n.js";
+import { reduce, clamp, lerp, smooth } from "./utils.js";
+
+// Dựng cảnh hero, trả về hàm vẽ từng khung hình
+export function initHero() {
   /* ---------- Hero: tháp 3D đang xây, một bạn sinh viên cầm tài liệu + laptop, 3 trợ lý AI mỗi bạn một việc ---------- */
   const art = document.getElementById("heroArt");
   const cv = art.querySelector("canvas");
@@ -258,3 +263,5 @@
       const hw = p.el.offsetWidth / 2 + 4, px = clamp((v3.x + 1) / 2 * W, hw, W - hw);
       p.el.style.transform = `translate(${px.toFixed(1)}px, ${((1 - v3.y) / 2 * Hh).toFixed(1)}px) translate(-50%, -100%)`; });
   };
+  return stepHero;
+}

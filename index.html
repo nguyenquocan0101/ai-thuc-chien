@@ -1,3 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Thực Chiến FA26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/src/styles/index.css">
+</head>
+<body>
+
+<header class="top light">
+  <glass-element auto-size radius="26" blur="3" strength="30" depth="6" background-color="rgba(255,255,255,0.62)">
+    <div class="bar">
+      <nav class="nav" aria-label="Menu">
+        <a href="#noi-dung" data-i18n="nav.program"></a>
+        <a href="#faq" data-i18n="nav.faq"></a>
+        <button class="lang" type="button" id="langBtn"></button>
+        <a class="btn btn-primary btn-sm" href="#dang-ky" data-i18n="nav.cta"></a>
+      </nav>
+    </div>
+  </glass-element>
+</header>
+
+<main id="top">
+  <section class="hero2" id="hero">
+    <div class="hero2-inner">
+      <div class="hero-copy">
+        <h1 data-i18n-html="hero.title"></h1>
+        <p class="slogan" data-i18n-html="hero.slogan"></p>
+        <p class="sub" data-i18n="hero.sub"></p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#dang-ky" data-i18n="hero.cta"></a>
+          <glass-element class="glass-cta" auto-size radius="26" blur="2" strength="60" depth="10" chromatic-aberration="2" background-color="rgba(255,255,255,0.55)"><a href="#noi-dung" data-i18n="hero.cta2"></a></glass-element>
+        </div>
+      </div>
+      <div class="hero-art" id="heroArt" aria-hidden="true"><canvas></canvas><div class="h-tags"></div></div>
+    </div>
+  </section>
+
+  <div class="after-hero">
+  <section class="band" id="gia-tri"><!-- không dùng .glow: phần này phủ lên hero khi chuyển cảnh, quầng cam bị cắt thành mảng mờ -->
+    <div class="inner">
+      <div class="sec-head rv">
+        <span class="eyebrow" data-i18n="val.eyebrow"></span>
+        <h2 data-i18n="val.title"></h2>
+        <p class="lead" data-i18n="val.lead"></p>
+      </div>
+      <div class="lab rv">
+        <div class="lab-tabs" role="tablist"><button class="lab-tab" role="tab" data-k="0"><span class="lt-n">01</span><span class="lt-k" data-i18n="val.k1"></span><span class="lt-h" data-i18n="val.h1"></span><span class="lt-p" data-i18n="val.p1"></span></button><button class="lab-tab" role="tab" data-k="1"><span class="lt-n">02</span><span class="lt-k" data-i18n="val.k2"></span><span class="lt-h" data-i18n="val.h2"></span><span class="lt-p" data-i18n="val.p2"></span></button><button class="lab-tab" role="tab" data-k="2"><span class="lt-n">03</span><span class="lt-k" data-i18n="val.k3"></span><span class="lt-h" data-i18n="val.h3"></span><span class="lt-p" data-i18n="val.p3"></span></button></div>
+        <div class="lab-app" id="modArt"></div>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <section class="band" id="noi-dung">
+    <div class="inner">
+      <div class="sec-head stairs-head rv"><span class="eyebrow" data-i18n="mods.eyebrow"></span><h2 data-i18n="mods.title"></h2></div>
+      <ol class="stairs"><li class="step s1" style="--i:0" tabindex="0"><span class="n">1</span><h3 data-i18n="top.t1"></h3><p data-i18n="top.d1"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o1"></span></p></li><li class="step s2" style="--i:1" tabindex="0"><span class="n">2</span><h3 data-i18n="top.t2"></h3><p data-i18n="top.d2"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o2"></span></p></li><li class="step s3" style="--i:2" tabindex="0"><span class="n">3</span><h3 data-i18n="top.t3"></h3><p data-i18n="top.d3"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o3"></span></p></li><li class="step s4" style="--i:3" tabindex="0"><span class="n">4</span><h3 data-i18n="top.t4"></h3><p data-i18n="top.d4"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o4"></span></p></li><li class="step s5" style="--i:4" tabindex="0"><span class="n">5</span><h3 data-i18n="top.t5"></h3><p data-i18n="top.d5"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o5"></span></p></li><li class="step s6" style="--i:5" tabindex="0"><svg class="cup" viewBox="0 0 64 64" aria-hidden="true"><path class="cup-h" d="M18 14H8v6c0 7 5 12 12 13M46 14h10v6c0 7-5 12-12 13"/><path class="cup-b" d="M18 8h28v14c0 10-6 17-14 17s-14-7-14-17z"/><path class="cup-s" d="M26 13v9c0 4 2 7 4 8"/><path class="cup-b" d="M28 39h8v8h-8zM20 47h24l2 9H18z"/></svg><span class="n">6</span><h3 data-i18n="top.t6"></h3><p data-i18n="top.d6"></p><p class="out"><b data-i18n="top.out"></b> <span data-i18n="top.o6"></span></p></li></ol>
+    </div>
+  </section>
+
+  <section class="band glow reg" id="dang-ky">
+    <div class="inner">
+
       <div class="reg-wrap">
         <form id="regForm" class="rv" novalidate>
           <div class="reg-head">
@@ -77,3 +146,33 @@
           <div class="gm-act"><button type="button" class="btn btn-sm btn-ghost" id="gmCancel" data-i18n="r.cancel"></button><button type="button" class="btn btn-sm btn-primary" id="gmOk" data-i18n="r.next"></button></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="band" id="faq">
+    <div class="inner">
+      <div class="sec-head rv">
+        <span class="eyebrow" data-i18n="faq.eyebrow"></span>
+        <h2 data-i18n="faq.title"></h2>
+      </div>
+      <div class="faq rv">
+        <details><summary data-i18n="faq.q1"></summary><p data-i18n="faq.a1"></p></details>
+        <details><summary data-i18n="faq.q2"></summary><p data-i18n="faq.a2"></p></details>
+        <details><summary data-i18n="faq.q3"></summary><p data-i18n="faq.a3"></p></details>
+        <details><summary data-i18n="faq.q4"></summary><p data-i18n="faq.a4"></p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="band">
+  <div class="inner">
+    <div><span class="muted">AI-Augmented Software Engineering · FPT University · FA26</span></div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@real-human/liquid-glass@1.2.0/dist/liquid-glass.umd.js"></script>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

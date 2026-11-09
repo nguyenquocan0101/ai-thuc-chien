@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Registrations live at /registrations/{uid}, one document per signed-in student.
+// Students may create/update only their own document; only admins may list or delete.
+// Keep the admin list in sync with src/lib/admins.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.email.lower() in [
+        'phuonglhk@gmail.com',
+        'nguyenquocan1010@gmail.com'
+      ];
+    }
+
+    function isStudent() {
+      return signedIn() && request.auth.token.email.lower().matches('[^@]+@fpt[.]edu[.]vn');
+    }
+
+    function validRegistration(d) {
+      let fields = ['uid', 'name', 'email', 'studentId', 'major', 'term', 'pledge', 'lang', 'createdAt', 'updatedAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.uid == request.auth.uid
+        && d.email == request.auth.token.email
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && d.studentId is string && d.studentId.matches('[A-Z]{2}[0-9]{6}')
+        && d.major in ['SE', 'AI', 'IA', 'IS', 'OTHER']
+        && d.term is string && d.term.matches('[1-9]')
+        && d.pledge == true
+        && d.lang in ['vi', 'en']
+        && d.updatedAt == request.time;
+    }
+
+    match /registrations/{uid} {
+      allow get: if isAdmin() || (isStudent() && request.auth.uid == uid);
+      allow list: if isAdmin();
+      allow create: if isStudent() && request.auth.uid == uid
+        && validRegistration(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isStudent() && request.auth.uid == uid
+        && validRegistration(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+  }
+}

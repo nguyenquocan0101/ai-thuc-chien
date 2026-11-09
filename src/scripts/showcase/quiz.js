@@ -1,3 +1,7 @@
+import { LANG } from "../i18n.js";
+import { reduce, tr } from "./utils.js";
+
+export function initQuiz() {
   /* ---------- "Soi code AI" dạng diff: mỗi tab là một đoạn AI viết, đỏ là chỗ sai, xanh là cách sửa ---------- */
   // d: dòng diff, ký tự đầu là " " (giữ), "-" (bỏ), "+" (thêm)
   const QZ = [
@@ -48,3 +52,4 @@
   if (!reduce) { stairs.classList.add("pending"); new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) stairs.classList.remove("pending"); }), { threshold: 0.2 }).observe(stairs); }
   document.getElementById("langBtn").addEventListener("click", () => setTimeout(renderQ, 0));
   renderQ();
+}
