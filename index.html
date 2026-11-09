@@ -65,16 +65,19 @@
   <section class="band glow reg" id="dang-ky">
     <div class="inner">
 
-      <div class="reg-wrap">
-        <form id="regForm" class="rv" novalidate>
-          <div class="reg-head">
-            <h2 data-i18n="r.title"></h2>
-          </div>
-          <div class="r-pane" id="rLogin">
-            <button type="button" class="g-btn" id="gBtn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.2-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span data-i18n="r.google"></span></button>
-            <p class="err" id="e-login" role="alert"></p>
-          </div>
+      <div class="reg-cta rv">
+        <h2 data-i18n="r.ctaT"></h2>
+        <p class="r-lead" data-i18n="r.ctaP"></p>
+        <button type="button" class="g-btn" id="gBtn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.2-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span data-i18n="r.google"></span></button>
+        <p class="err" id="e-login" role="alert"></p>
+      </div>
 
+      <dialog class="reg-dlg" id="regDlg" aria-labelledby="regDlgT">
+        <form id="regForm" novalidate>
+          <div class="dlg-head">
+            <h2 id="regDlgT" data-i18n="r.title"></h2>
+            <button type="button" class="dlg-x" id="regClose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span class="sr-only" data-i18n="r.close"></span></button>
+          </div>
           <div class="r-pane" id="rInfo" hidden>
             <div class="acct">
               <span class="av" id="acAv"></span>
@@ -136,7 +139,7 @@
             <div><button class="btn btn-sm btn-ghost" type="button" id="againBtn" data-i18n="f.again"></button></div>
           </div>
         </form>
-      </div>
+      </dialog>
 
       <div class="rules-page" id="rulesPage" hidden role="dialog" aria-modal="true" aria-labelledby="rpT">
         <div class="rp-bar"><button type="button" class="rp-back" id="rpBack"><span aria-hidden="true">←</span> <span data-i18n="r.back"></span></button><span class="rp-step" data-i18n="r.s3"></span></div>

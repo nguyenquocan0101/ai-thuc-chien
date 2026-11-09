@@ -188,18 +188,6 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 
 /* Đăng ký mới */
 .reg .inner { max-width: 1120px; }
-.reg-wrap { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-.reg-head { position: sticky; top: 100px; display: grid; gap: 14px; }
-.reg-head h2 { margin: 0; }
-.reg-steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 4px; }
-.reg-steps li { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: center; padding: 10px 0; color: var(--muted); }
-.reg-steps li:not(:last-child)::after { content: ""; position: absolute; left: 19px; top: 48px; bottom: -6px; width: 2px; border-radius: 2px; background: rgba(23,20,31,.1); }
-.reg-steps b { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(23,20,31,.14); font: 700 .95rem/1 var(--f-mono); color: var(--muted); transition: all .25s; }
-.reg-steps strong { display: block; font-size: 1rem; color: var(--ink); opacity: .55; transition: opacity .25s; } .reg-steps small { font-size: .85rem; }
-.reg-steps li.on b { background: var(--orange); color: #fff; box-shadow: 0 0 0 5px var(--orange-soft); } .reg-steps li.on strong { opacity: 1; }
-.reg-steps li.ok b { background: #1B7A45; color: transparent; box-shadow: none; position: relative; } .reg-steps li.ok b::after { content: "✓"; position: absolute; color: #fff; font-size: 1rem; }
-.reg-steps li.ok strong { opacity: 1; } .reg-steps li.ok:not(:last-child)::after { background: #1B7A45; }
-#regForm { gap: 0; }
 .r-pane { display: grid; gap: 18px; animation: qzIn .35s ease both; }
 .r-pane[hidden] { display: none; }
 .r-kicker { font: 600 .74rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--orange-deep); }
@@ -233,14 +221,9 @@ body.no-scroll { overflow: hidden; }
 .gm-card { width: min(100%, 400px); background: #fff; border-radius: 20px; padding: 24px; display: grid; gap: 14px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.5); animation: qzIn .25s ease both; }
 .gm-top { display: flex; align-items: center; gap: 10px; } .gm-top svg { width: 26px; height: 26px; } .gm-card h3 { margin: 0; font-size: 1.2rem; }
 .gm-act { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-@media (max-width: 900px) { .reg-wrap { grid-template-columns: 1fr; } .reg-head { position: static; } }
-@media (max-width: 560px) { .done-sum { grid-template-columns: 1fr; } .reg-steps { display: none; } }
+@media (max-width: 560px) { .done-sum { grid-template-columns: 1fr; } }
 @media (max-width: 720px) { .rules .chev { transform: rotate(-45deg); } }
 /* Đăng ký gọn: một thẻ duy nhất */
-.reg-wrap { grid-template-columns: 1fr; max-width: 600px; margin: 0 auto; }
-#regForm { gap: 22px; }
-.reg-head { position: static; gap: 8px; text-align: center; justify-items: center; }
-.reg-head h2 { font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem); }
 /* Slogan: chữ trơn, không pill/chấm */
 .hero2 .slogan { display: block; position: static; margin: 18px 0 0; padding: 0; border-radius: 0; background: none; box-shadow: none; font-size: clamp(1.05rem, .95rem + .45vw, 1.3rem); font-weight: 600; line-height: 1.4; color: var(--ink); letter-spacing: -.01em; }
 .hero2 .slogan::before { content: none; }
@@ -304,3 +287,31 @@ fieldset.pick legend { padding: 0; margin-bottom: 10px; font-weight: 600; font-s
   .pills { gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { .chip span, .pill span, .chip span::before, #submitBtn svg { transition: none; } .id-chip { animation: none; } }
+
+
+/* Khu đăng ký: lời mời + một nút; form mở trong popup */
+.reg-cta { width: 100%; max-width: 680px; margin: 0 auto; display: grid; justify-items: center; gap: 14px; text-align: center; }
+.reg-cta h2 { margin: 0; font-size: clamp(1.8rem, 1.3rem + 2vw, 2.8rem); line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; }
+.reg-cta .r-lead { margin: 0; max-width: 46ch; color: var(--muted); font-size: clamp(1rem, .95rem + .25vw, 1.12rem); text-wrap: pretty; }
+.reg-cta .g-btn { width: auto; min-width: 260px; padding: 0 28px; margin-top: 10px; }
+.reg-cta .err { margin: 0; max-width: 46ch; }
+.reg-dlg { width: min(100% - 32px, 600px); max-width: none; max-height: calc(100dvh - 48px); padding: 0; border: 0; border-radius: 24px; background: #fff; color: var(--ink); box-shadow: 0 40px 100px -30px rgba(23,20,31,.55); overflow-y: auto; overscroll-behavior: contain; }
+.reg-dlg[open] { animation: dlgIn .28s cubic-bezier(.2,.8,.2,1) both; }
+.reg-dlg::backdrop { background: rgba(23,20,31,.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+@keyframes dlgIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: none; } }
+html:has(.reg-dlg[open]) { overflow: hidden; }
+.reg-dlg form { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; border: 0; box-shadow: none; border-radius: 0; padding: 20px 24px 26px; gap: 22px; }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dlg-head h2 { margin: 0; font-size: clamp(1.35rem, 1.2rem + .5vw, 1.6rem); }
+.dlg-x { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); display: grid; place-items: center; cursor: pointer; transition: border-color .15s, color .15s; }
+.dlg-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.dlg-x:hover { border-color: var(--orange); color: var(--orange-deep); }
+.dlg-x:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+@media (max-width: 560px) {
+  .reg-dlg { width: 100%; margin: auto 0 0; max-height: 92dvh; border-radius: 22px 22px 0 0; }
+  .reg-dlg[open] { animation-name: sheetIn; }
+  .reg-dlg form { padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .reg-cta .g-btn { width: 100%; min-width: 0; }
+}
+@keyframes sheetIn { from { translate: 0 100%; } to { translate: none; } }
+@media (prefers-reduced-motion: reduce) { .reg-dlg[open] { animation: none; } }

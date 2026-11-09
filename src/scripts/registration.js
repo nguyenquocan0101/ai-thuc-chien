@@ -10,12 +10,9 @@ let fbMod = null;
 const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").then(m => (fbMod = m));
 const SCHOOL_DOMAIN = "fpt.edu.vn";
 Object.assign(I18N.vi, {
-  "r.title": "Đăng ký ngay", "r.lead": "Miễn phí cho sinh viên FPT khối IT. Đăng nhập bằng tài khoản Google @fpt.edu.vn để bắt đầu.",
-  "r.s1": "Đăng nhập Google", "r.s1d": "Chỉ nhận tài khoản @fpt.edu.vn",
-  "r.s2": "Thông tin sinh viên", "r.s2d": "MSSV, ngành học, học kỳ hiện tại",
-  "r.s3": "Cam kết tham gia", "r.s3d": "Đọc điều lệ và xác nhận",
-  "r.k1": "Bước 1/3", "r.loginT": "Đăng nhập bằng mail trường", "r.loginP": "Dùng tài khoản Google @fpt.edu.vn để ban tổ chức xác nhận bạn là sinh viên FPT.",
-  "r.google": "Tiếp tục với Google",
+  "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, chỉ cần tài khoản @fpt.edu.vn.",
+  "r.s3": "Cam kết tham gia", "r.close": "Đóng",
+  "r.google": "Đăng ký với Google",
   "r.eDomain": "Tài khoản này không phải mail trường. Hãy đăng nhập bằng email @fpt.edu.vn.", "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
   "r.verified": "Đã xác minh", "r.switch": "Đổi tài khoản", "r.major": "Ngành học",
   "r.rulesOpen": "Bấm để đọc 5 điều lệ trước khi xác nhận", "r.rulesRead": "Đã đọc", "r.rulesMob": "Mở trang điều lệ",
@@ -27,12 +24,9 @@ Object.assign(I18N.vi, {
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
-  "r.title": "Register now", "r.lead": "Free for FPT students in IT majors. Sign in with your @fpt.edu.vn Google account to start.",
-  "r.s1": "Sign in with Google", "r.s1d": "@fpt.edu.vn accounts only",
-  "r.s2": "Student details", "r.s2d": "Student ID, major, current term",
-  "r.s3": "Attendance commitment", "r.s3d": "Read the rules and confirm",
-  "r.k1": "Step 1/3", "r.loginT": "Sign in with your school email", "r.loginP": "Use your @fpt.edu.vn Google account so the organisers can confirm you're an FPT student.",
-  "r.google": "Continue with Google",
+  "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, all you need is your @fpt.edu.vn account.",
+  "r.s3": "Attendance commitment", "r.close": "Close",
+  "r.google": "Register with Google",
   "r.eDomain": "That isn't a school account. Please sign in with your @fpt.edu.vn email.", "r.eFail": "Sign-in didn't go through. Please try again.",
   "r.verified": "Verified", "r.switch": "Switch account", "r.major": "Major",
   "r.rulesOpen": "Open to read the 5 rules before confirming", "r.rulesRead": "Read", "r.rulesMob": "Open the rules page",
@@ -45,10 +39,11 @@ Object.assign(I18N.en, {
 });
 export function initRegistration() {
   const $ = id => document.getElementById(id);
-  const form = $("regForm"), paneL = $("rLogin"), paneI = $("rInfo"), done = $("done"), steps = [...document.querySelectorAll("#regSteps li")];
+  const form = $("regForm"), dlg = $("regDlg"), paneI = $("rInfo"), done = $("done");
   const btn = $("submitBtn"), cPledge = $("c-pledge"), hint = $("submitHint"), rules = $("rules"), rPage = $("rulesPage"), gMock = $("gMock");
   const mob = matchMedia("(max-width: 720px)");
-  document.body.appendChild(rPage); document.body.appendChild(gMock); // ra ngoài section để luôn nằm trên header
+  // Popup form là <dialog> (top layer): trang điều lệ phải nằm trong dialog mới hiện được bên trên
+  dlg.appendChild(rPage); document.body.appendChild(gMock);
   let user = null, read = false, lastFocus = null;
   const termBox = $("termPills");
   for (let i = 1; i <= 9; i++) {
@@ -89,8 +84,8 @@ export function initRegistration() {
     $("gmOk").onclick = () => { const e = ml.value.trim(); close(); if (!isSchool(e)) return no("domain"); ok({ name: nm.value.trim() || e.split("@")[0], email: e, photo: "" }); };
   });
 
-  const setStep = n => steps.forEach((li, i) => { li.classList.toggle("on", i + 1 === n); li.classList.toggle("ok", i + 1 < n || n === 4); });
-  const showPane = p => { [paneL, paneI, done].forEach(x => x.hidden = x !== p); };
+  const showPane = p => { [paneI, done].forEach(x => x.hidden = x !== p); };
+  const openForm = () => { if (!dlg.open) dlg.showModal(); (paneI.hidden ? done : $("f-id")).focus(); };
   const renderAcct = () => {
     if (!user) return;
     $("acName").textContent = user.name; $("acMail").textContent = user.email;
@@ -109,7 +104,6 @@ export function initRegistration() {
     rules.classList.toggle("read", read);
     const ok = read && cPledge.checked; btn.disabled = !ok;
     hint.textContent = !read ? t("r.hintRead") : t(ok ? "f.hintOn" : "f.hintOff");
-    if (!paneI.hidden) setStep(read ? 3 : 2);
   };
   // Trả về "ok" | "cancel" | "error"
   const signIn = async () => {
@@ -125,21 +119,27 @@ export function initRegistration() {
     if (FIREBASE_CONFIG) prefill();
     return "ok";
   };
-  $("gBtn").addEventListener("click", async () => { if (await signIn() === "ok") $("f-id").focus(); });
-  // Nút "Đăng ký" ở header/hero: chưa đăng nhập thì mở Google ngay trong cú bấm, xong mới cuộn tới form
+  // Mọi nút Đăng ký: chưa đăng nhập thì mở Google ngay trong cú bấm (tránh chặn popup), xong mở popup form
+  const start = async () => {
+    if (user) { openForm(); return "ok"; }
+    const r = await signIn();
+    if (r === "ok") openForm();
+    return r;
+  };
+  $("gBtn").addEventListener("click", start);
   const noMotion = matchMedia("(prefers-reduced-motion: reduce)");
   document.querySelectorAll('a[href="#dang-ky"]').forEach(a => a.addEventListener("click", async ev => {
-    if (user || paneL.hidden) return; // đã đăng nhập: cuộn xuống form như bình thường
     ev.preventDefault();
-    const r = await signIn();
-    if (r === "cancel") return;
-    $("dang-ky").scrollIntoView({ behavior: noMotion.matches ? "auto" : "smooth", block: "start" });
-    if (r === "ok") $("f-id").focus({ preventScroll: true });
+    // Lỗi đăng nhập hiện ở khu đăng ký, cuộn tới để sinh viên thấy
+    if (await start() === "error") $("dang-ky").scrollIntoView({ behavior: noMotion.matches ? "auto" : "smooth", block: "center" });
   }));
+  $("regClose").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // bấm ra ngoài
+  dlg.addEventListener("close", () => $("gBtn").focus({ preventScroll: true }));
   $("acSwitch").addEventListener("click", () => {
     if (FIREBASE_CONFIG) fb().then(m => m.signOutUser());
     if (idInput.value === suggestedId) { idInput.value = ""; setIdHint(false); }
-    user = null; showPane(paneL); setStep(1); $("gBtn").focus();
+    user = null; dlg.close();
   });
 
   // Điều lệ: máy tính mở dạng dropdown, điện thoại mở sang trang riêng
@@ -149,20 +149,23 @@ export function initRegistration() {
     ev.preventDefault(); openPage();
   });
   const openPage = () => {
-    lastFocus = document.activeElement; rPage.hidden = false; rPage.scrollTop = 0; document.body.classList.add("no-scroll");
+    lastFocus = document.activeElement; rPage.hidden = false; rPage.scrollTop = 0;
     try { history.pushState({ rules: 1 }, "", "#cam-ket"); } catch (e) {}
     $("rpBack").focus();
   };
   const closePage = (fromPop) => {
     if (rPage.hidden) return;
-    rPage.hidden = true; document.body.classList.remove("no-scroll"); read = true; sync();
+    rPage.hidden = true; read = true; sync();
     if (!fromPop) { try { if (history.state && history.state.rules) history.back(); } catch (e) {} }
     (lastFocus || cPledge).focus();
   };
   $("rpBack").addEventListener("click", () => closePage(false));
   $("rpAgree").addEventListener("click", () => { closePage(false); cPledge.checked = true; sync(); });
   addEventListener("popstate", () => closePage(true));
-  addEventListener("keydown", e => { if (e.key === "Escape") { if (!rPage.hidden) closePage(false); else if (!gMock.hidden) $("gmCancel").click(); } });
+  // Esc khi đang mở trang điều lệ: chỉ đóng trang điều lệ, không đóng popup form
+  addEventListener("keydown", e => { if (e.key === "Escape") { if (!rPage.hidden) { e.preventDefault(); closePage(false); } else if (!gMock.hidden) $("gmCancel").click(); } });
+  // Nút Back Android cũng gửi "cancel" cho dialog: đang ở trang điều lệ thì chỉ đóng trang đó
+  dlg.addEventListener("cancel", e => { if (!rPage.hidden) { e.preventDefault(); closePage(false); } });
   mob.addEventListener && mob.addEventListener("change", () => { if (mob.matches) rules.open = false; sync(); });
   cPledge.addEventListener("change", sync);
 
@@ -216,14 +219,14 @@ export function initRegistration() {
       }
       saving = false; sync();
     }
-    renderDone(); showPane(done); setStep(4); done.focus();
+    renderDone(); showPane(done); done.focus();
   });
   $("againBtn").addEventListener("click", () => { showPane(paneI); sync(); idInput.focus(); });
   addEventListener("langchange", () => {
     sync(); document.querySelectorAll(".err").forEach(el => { if (el.dataset.key) el.textContent = t(el.dataset.key); });
     if (!done.hidden) renderDone();
   });
-  setStep(1); sync();
+  sync();
   // Nạp sớm để nút Đăng ký ở header mở popup ngay trong cú bấm
   if (FIREBASE_CONFIG) (window.requestIdleCallback || (f => setTimeout(f, 300)))(() => fb().catch(x => console.warn("firebase preload", x)));
 }
