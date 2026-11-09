@@ -13,7 +13,7 @@ const SCHOOL_DOMAIN = "fpt.edu.vn";
 Object.assign(I18N.vi, {
   "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, chỉ cần tài khoản @fpt.edu.vn.",
   "r.close": "Đóng",
-  "r.google": "Đăng ký với Google",
+  "r.join": "Tham gia ngay",
   "r.eDomain": "Tài khoản này không phải mail trường. Hãy đăng nhập bằng email @fpt.edu.vn.", "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
   "r.verified": "Đã xác minh", "r.switch": "Đổi tài khoản", "r.major": "Ngành học",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
@@ -24,7 +24,7 @@ Object.assign(I18N.vi, {
 Object.assign(I18N.en, {
   "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, all you need is your @fpt.edu.vn account.",
   "r.close": "Close",
-  "r.google": "Register with Google",
+  "r.join": "Join now",
   "r.eDomain": "That isn't a school account. Please sign in with your @fpt.edu.vn email.", "r.eFail": "Sign-in didn't go through. Please try again.",
   "r.verified": "Verified", "r.switch": "Switch account", "r.major": "Major",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
