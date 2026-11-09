@@ -1,3 +1,5 @@
+@import "./select-menu.css";
+
 :root {
   --bg: #FFFCF9;
   --card: #FFFFFF;
@@ -44,6 +46,8 @@ h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -0.01em; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .tools input, .tools select { font: inherit; padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); min-width: 0; }
 .tools input { width: 240px; max-width: 100%; }
+.tools .sm { --sm-radius: 999px; --sm-pad: 9px 42px 9px 14px; --sm-bg: var(--card); min-width: 200px; }
+.tools .sm-btn { font-size: .95rem; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .chip { background: var(--orange-soft); color: var(--orange-deep); border-radius: 999px; padding: 3px 10px; font-size: .8rem; font-weight: 600; }
 
@@ -57,6 +61,7 @@ tbody tr:hover { background: #FFFAF6; }
 
 @media (max-width: 600px) {
   .tools, .tools input { width: 100%; }
-  .tools select, .tools .btn { flex: 1; }
+  .tools .sm, .tools .btn { flex: 1; }
+  .tools .sm { min-width: 0; }
   .who span { display: none; }
 }

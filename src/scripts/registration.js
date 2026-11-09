@@ -23,6 +23,7 @@ Object.assign(I18N.vi, {
   "r.back": "Quay lại form", "r.agree": "Tôi đã đọc, quay lại form",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
   "r.sumId": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
+  "r.idFromMail": "Gợi ý từ email trường, sửa lại nếu chưa đúng",
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
@@ -39,6 +40,7 @@ Object.assign(I18N.en, {
   "r.back": "Back to the form", "r.agree": "I've read it, back to the form",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
   "r.sumId": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
+  "r.idFromMail": "Suggested from your school email. Edit it if it's wrong",
   "r.saving": "Saving your registration…", "r.eSave": "Couldn't save your registration. Check your connection and submit again.",
 });
 export function initRegistration() {
@@ -52,6 +54,8 @@ export function initRegistration() {
   for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
   const labelTerms = () => [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
   labelTerms(); addEventListener("langchange", labelTerms);
+  // Tên tài khoản FPT có đuôi khóa/cơ sở: "Nguyen Quoc An (K18 HCM)" → "Nguyen Quoc An"
+  const shortName = n => String(n || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(n || "").trim();
   const isSchool = e => new RegExp("^[^\\s@]+@" + SCHOOL_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(String(e || "").trim());
 
   // --- Firebase thật (chỉ chạy khi có FIREBASE_CONFIG) ---
@@ -67,6 +71,7 @@ export function initRegistration() {
       const { getRegistration } = await fb(), r = await getRegistration(user.uid);
       if (!r) return;
       $("f-id").value = r.studentId || ""; $("f-major").value = r.major || ""; $("f-term").value = r.term || "";
+      setIdHint(r.studentId === suggestedId);
     } catch (x) { console.warn("prefill", x); }
   };
   // --- Bản xem trước: cửa sổ mô phỏng ---
@@ -83,7 +88,14 @@ export function initRegistration() {
   const renderAcct = () => {
     if (!user) return;
     $("acName").textContent = user.name; $("acMail").textContent = user.email;
-    const av = $("acAv"); av.innerHTML = user.photo ? `<img src="${esc(user.photo)}" alt="">` : esc((user.name.trim().split(/\s+/).pop() || "?")[0].toUpperCase());
+    const av = $("acAv");
+    av.textContent = (shortName(user.name).split(/\s+/).pop() || "?")[0].toUpperCase();
+    if (user.photo) {
+      // Ảnh Google (googleusercontent) từ chối request có Referer; lỗi thì giữ chữ cái đầu
+      const img = new Image(); img.alt = ""; img.referrerPolicy = "no-referrer";
+      img.onload = () => { if (user && user.photo === img.src) av.replaceChildren(img); };
+      img.src = user.photo;
+    }
   };
   const sync = () => {
     cPledge.disabled = !read;
@@ -97,10 +109,16 @@ export function initRegistration() {
     const e = $("e-login"); e.textContent = ""; e.dataset.key = "";
     try { user = FIREBASE_CONFIG ? await fbSignIn() : await mockSignIn(); }
     catch (x) { if (x !== "cancel") { e.dataset.key = x === "domain" ? "r.eDomain" : "r.eFail"; e.textContent = t(e.dataset.key); } return; }
-    renderAcct(); showPane(paneI); sync(); $("f-id").focus();
+    renderAcct(); suggestId(); showPane(paneI);
+    if (!mob.matches) rules.open = true; // máy tính: mở sẵn điều lệ cam kết
+    sync(); $("f-id").focus();
     if (FIREBASE_CONFIG) prefill();
   });
-  $("acSwitch").addEventListener("click", () => { if (FIREBASE_CONFIG) fb().then(m => m.signOutUser()); user = null; showPane(paneL); setStep(1); $("gBtn").focus(); });
+  $("acSwitch").addEventListener("click", () => {
+    if (FIREBASE_CONFIG) fb().then(m => m.signOutUser());
+    if (idInput.value === suggestedId) { idInput.value = ""; setIdHint(false); }
+    user = null; showPane(paneL); setStep(1); $("gBtn").focus();
+  });
 
   // Điều lệ: máy tính mở dạng dropdown, điện thoại mở sang trang riêng
   rules.addEventListener("toggle", () => { if (rules.open) { read = true; sync(); } });
@@ -126,8 +144,20 @@ export function initRegistration() {
   mob.addEventListener && mob.addEventListener("change", () => { if (mob.matches) rules.open = false; sync(); });
   cPledge.addEventListener("change", sync);
 
-  const idInput = $("f-id");
-  idInput.addEventListener("input", () => { idInput.value = idInput.value.toUpperCase().replace(/\s/g, ""); });
+  const idInput = $("f-id"), idHint = $("h-id");
+  // MSSV nằm cuối phần trước @ của mail trường (annqse183962@fpt.edu.vn → SE183962): điền sẵn, sinh viên vẫn sửa được
+  let suggestedId = "";
+  const setIdHint = on => { idHint.dataset.i18n = on ? "r.idFromMail" : "f.idHint"; idHint.textContent = t(idHint.dataset.i18n); };
+  const suggestId = () => {
+    if (idInput.value && idInput.value !== suggestedId) return; // sinh viên đã tự nhập
+    const m = /([a-z]{2})(\d{6})@/i.exec(user.email);
+    suggestedId = m ? (m[1] + m[2]).toUpperCase() : "";
+    idInput.value = suggestedId; setIdHint(!!suggestedId);
+  };
+  idInput.addEventListener("input", () => {
+    idInput.value = idInput.value.toUpperCase().replace(/\s/g, "");
+    if (idInput.value !== suggestedId) setIdHint(false);
+  });
   const ruleF = { "f-id": v => /^[A-Z]{2}\d{6}$/.test(v.trim()) ? "" : "e.id", "f-major": v => v ? "" : "e.major", "f-term": v => v ? "" : "e.term" };
   const check = id => {
     const el = $(id), key = ruleF[id](el.value), f = el.closest(".field");
@@ -136,7 +166,7 @@ export function initRegistration() {
   };
   Object.keys(ruleF).forEach(id => { const el = $(id); el.addEventListener("blur", () => { if (el.value) check(id); }); ["input", "change"].forEach(ev => el.addEventListener(ev, () => { if (el.closest(".field").classList.contains("bad")) check(id); })); });
   const renderDone = () => {
-    const sel = $("f-major"), last = user.name.trim().split(/\s+/).pop();
+    const sel = $("f-major"), last = shortName(user.name).split(/\s+/).pop();
     $("doneTitle").textContent = t("d.title")(last);
     $("doneText").innerHTML = t("d.text")(esc(user.email), pick(COURSE.resultDate) ? esc(pick(COURSE.resultDate)) : "");
     $("doneSum").innerHTML = [[t("r.sumId"), idInput.value], [t("r.sumMajor"), sel.options[sel.selectedIndex].text], [t("r.sumTerm"), t("f.termN") + $("f-term").value]].map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("");

@@ -1,5 +1,6 @@
 import { signInWithGoogle, signOutUser, onUserChange, watchRegistrations } from "./lib/firebase.js";
 import { isAdminEmail } from "./lib/admins.js";
+import { enhanceSelects } from "./lib/select-menu.js";
 
 const $ = id => document.getElementById(id);
 const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Chuyên ngành khác khối IT" };
@@ -13,6 +14,7 @@ const fmtDate = ts => { const d = toDate(ts); return d ? d.toLocaleString("vi-VN
 const majorName = code => MAJORS[code] || code || "—";
 
 Object.entries(MAJORS).forEach(([code, name]) => { const o = document.createElement("option"); o.value = code; o.textContent = name; $("fMajor").appendChild(o); });
+enhanceSelects();
 
 function filtered() {
   const q = $("q").value.trim().toLowerCase(), m = $("fMajor").value;
