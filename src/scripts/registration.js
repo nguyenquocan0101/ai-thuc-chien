@@ -20,7 +20,7 @@ Object.assign(I18N.vi, {
   "r.back": "Quay lại form", "r.agree": "Tôi đã đọc, quay lại form",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
   "r.sumId": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
-  "r.idFromMail": "Gợi ý từ email trường, sửa lại nếu chưa đúng", "r.idChip": "Từ email",
+  "r.idFromMail": "Gợi ý từ email trường, sửa lại nếu chưa đúng",
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
@@ -34,7 +34,7 @@ Object.assign(I18N.en, {
   "r.back": "Back to the form", "r.agree": "I've read it, back to the form",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
   "r.sumId": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
-  "r.idFromMail": "Suggested from your school email. Edit it if it's wrong", "r.idChip": "From email",
+  "r.idFromMail": "Suggested from your school email. Edit it if it's wrong",
   "r.saving": "Saving your registration…", "r.eSave": "Couldn't save your registration. Check your connection and submit again.",
 });
 export function initRegistration() {
@@ -172,7 +172,7 @@ export function initRegistration() {
   const idInput = $("f-id"), idHint = $("h-id");
   // MSSV nằm cuối phần trước @ của mail trường (annqse183962@fpt.edu.vn → SE183962): điền sẵn, sinh viên vẫn sửa được
   let suggestedId = "";
-  const setIdHint = on => { idHint.dataset.i18n = on ? "r.idFromMail" : "f.idHint"; idHint.textContent = t(idHint.dataset.i18n); $("idChip").hidden = !on; };
+  const setIdHint = on => { idHint.dataset.i18n = on ? "r.idFromMail" : "f.idHint"; idHint.textContent = t(idHint.dataset.i18n); };
   const suggestId = () => {
     if (idInput.value && idInput.value !== suggestedId) return; // sinh viên đã tự nhập
     const m = /([a-z]{2})(\d{6})@/i.exec(user.email);
