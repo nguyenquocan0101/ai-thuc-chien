@@ -277,7 +277,7 @@ html:has(.reg-dlg[open]) { overflow: hidden; }
 /* Form gọn: vừa một khung popup, không phải cuộn */
 .reg-dlg form { gap: 16px; padding: 18px 22px 22px; }
 #rInfo { gap: 16px; }
-.pick-row { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 12px; align-items: start; }
+.pick-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; align-items: start; }
 .pledge-box { display: grid; gap: 10px; }
 .pledge-box > b { font-size: .95rem; }
 .pledge-list ol { margin: 0; padding-left: 20px; display: grid; grid-template-columns: 1fr; gap: 2px; font-size: .86rem; line-height: 1.45; color: #3D3846; }
@@ -287,7 +287,7 @@ html:has(.reg-dlg[open]) { overflow: hidden; }
 @media (max-width: 560px) {
   .reg-dlg form { gap: 14px; padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
   #rInfo { gap: 14px; }
-  .pick-row { grid-template-columns: minmax(0, 1fr) 124px; gap: 10px; }
+  .pick-row { grid-template-columns: minmax(0, 1fr) 146px; gap: 10px; }
   .pledge-list ol { grid-template-columns: 1fr; gap: 2px; }
 }
 #rInfo .submit-row { grid-template-columns: minmax(0, 1fr); }
