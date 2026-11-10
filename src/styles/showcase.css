@@ -196,23 +196,33 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .tick input:disabled { opacity: .45; cursor: not-allowed; } .tick:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
 
-/* CTA đăng ký: khối cam phẳng, viền đen và bóng đổ đặc lệch góc; chữ đen trên cam đủ tương phản */
-.reg-cta { --shift: 10px; width: calc(100% - var(--shift)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px 56px; align-items: start; transition: grid-template-columns .62s cubic-bezier(.22, 1, .36, 1); padding: clamp(36px, 5vw, 56px); border: 2.5px solid var(--ink); border-radius: 28px; background: var(--orange); color: var(--ink); box-shadow: var(--shift) var(--shift) 0 var(--ink); }
+/* CTA đăng ký: cửa sổ terminal sáng (thanh tiêu đề 3 chấm, chữ mono), điểm nhấn cam */
+.reg-cta { --px: clamp(24px, 4.5vw, 52px); --t-bg: #fff; --t-fg: var(--ink); --t-dim: #5F5868; --t-line: rgba(23,20,31,.12); --t-field: #fff;
+  margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px 56px; align-items: start; transition: grid-template-columns .62s cubic-bezier(.22, 1, .36, 1);
+  padding: 0 var(--px) var(--px); border: 1px solid rgba(23,20,31,.12); border-radius: 14px; background: var(--t-bg); color: var(--t-fg); overflow: hidden;
+  box-shadow: 0 44px 80px -40px rgba(120,50,10,.55), 0 2px 10px rgba(23,20,31,.12); }
+.cta-bar { grid-column: 1 / -1; position: relative; display: flex; align-items: center; gap: 8px; height: 40px; margin: 0 calc(-1 * var(--px)); padding: 0 16px; background: linear-gradient(#F4F1EF, #E9E4E0); border-bottom: 1px solid rgba(23,20,31,.08); }
+.cta-bar i { width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; } .cta-bar i:nth-child(2) { background: #FEBC2E; } .cta-bar i:nth-child(3) { background: #28C840; }
+.cta-bar span { position: absolute; left: 50%; transform: translateX(-50%); max-width: calc(100% - 140px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 12px/1 var(--f-mono); color: #6B6570; }
 .cta-main { display: grid; gap: 14px; min-width: 0; }
 .cta-side { display: grid; min-width: 0; }
-.cta-when { margin: 0; font: 600 .78rem var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+.cta-when { margin: 0; font: 500 .8rem var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--t-dim); }
+.cta-when::before { content: "# "; color: #A59DAD; }
 .cta-when[hidden] { display: none; }
-.reg-cta h2 { margin: 0; font-size: clamp(2rem, 1.3rem + 2.4vw, 3.2rem); line-height: 1.08; letter-spacing: -.03em; text-wrap: balance; }
-.reg-cta .r-lead { margin: 0; max-width: 44ch; color: rgba(23,20,31,.82); font-size: clamp(1rem, .95rem + .25vw, 1.12rem); text-wrap: pretty; }
-.cta-perks { list-style: none; margin: 0; padding: 0; display: grid; font-weight: 600; }
-.cta-perks li { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1.5px solid rgba(23,20,31,.18); }
-.cta-perks li:first-child { border-top: 1.5px solid rgba(23,20,31,.18); }
-.cta-perks svg { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.reg-cta .reg-go { width: 100%; justify-content: center; gap: 10px; padding: 17px 28px; margin-top: 6px; font-size: 1.08rem; background: var(--ink); color: #fff; transition: transform .15s, box-shadow .15s, background-color .15s; }
-.reg-cta .reg-go:hover { background: var(--ink); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 #fff; }
-.reg-cta .reg-go:active { transform: none; box-shadow: none; }
-.reg-cta .reg-go:focus-visible { outline-color: var(--ink); }
-@media (max-width: 760px) { .reg-cta { grid-template-columns: minmax(0, 1fr); --shift: 6px; border-radius: 22px; padding: 28px 22px; } }
+.reg-cta h2 { margin: 0; color: var(--ink); font-size: clamp(1.9rem, 1.2rem + 2.3vw, 3rem); line-height: 1.1; letter-spacing: -.03em; text-wrap: balance; }
+.reg-cta h2::before { content: ">"; margin-right: .3em; font: 500 .8em var(--f-mono); color: var(--orange); }
+/* Con trỏ nhấp nháy cuối tiêu đề */
+.reg-cta h2::after { content: ""; display: inline-block; width: .42em; height: .82em; margin-left: .12em; vertical-align: -.06em; background: var(--orange); animation: caret 1.1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.reg-cta .r-lead { margin: 0; max-width: 46ch; color: var(--t-dim); font-size: clamp(1rem, .95rem + .25vw, 1.1rem); text-wrap: pretty; }
+.cta-perks { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 500 .95rem/1.5 var(--f-mono); }
+.cta-perks li { display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+.cta-perks svg { flex: none; width: 18px; height: 18px; fill: none; stroke: #1B7A45; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.reg-cta .reg-go { width: 100%; justify-content: center; gap: 10px; padding: 16px 24px; margin-top: 10px; border-radius: 10px; font: 600 1.02rem/1 var(--f-mono); background: var(--orange); color: var(--ink); transition: background-color .15s, box-shadow .15s; }
+.reg-cta .reg-go::before { content: "$"; opacity: .55; }
+.reg-cta .reg-go:hover { background: #FF8436; transform: none; box-shadow: 0 0 0 4px rgba(243,112,33,.28); }
+.reg-cta .reg-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (max-width: 760px) { .reg-cta { grid-template-columns: minmax(0, 1fr); gap: 26px; border-radius: 12px; } .cta-bar { height: 34px; } .cta-bar i { width: 10px; height: 10px; } }
 .reg-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
 .reg-go:hover svg { transform: translateX(3px); }
 /* Bấm "Tham gia ngay": cột phải nới rộng, lời mời gấp lại, form mở ra trong cùng khối */
@@ -224,13 +234,17 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 .fold-in { min-height: 0; overflow: hidden; display: grid; gap: 14px; }
 .cta-fold.is-settled > .fold-in { overflow: visible; }
 .cta-fold.is-shut > .fold-in { visibility: hidden; transition: visibility 0s .55s; }
-/* Form và lời xác nhận nằm trên tấm trắng để ô nhập, nút cam và dấu * giữ đúng màu */
-.reg-form, .reg-cta .done { margin: 0; padding: clamp(18px, 2.4vw, 24px); background: #fff; border: 2.5px solid var(--ink); border-radius: 20px; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* Form và lời xác nhận: khung viền mảnh trong terminal, nhãn và ô nhập chữ mono */
+.reg-form, .reg-cta .done { margin: 0; padding: clamp(18px, 2.4vw, 24px); background: #FBF8F6; border: 1px solid var(--t-line); border-radius: 12px; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.reg-cta label { font: 500 .82rem/1.3 var(--f-mono); color: #3D3846; }
+.reg-cta input[type=text], .reg-cta input[type=email] { background: var(--t-field); font-family: var(--f-mono); }
+.reg-cta .sm { --sm-bg: var(--t-field); }
+.reg-cta .sm-btn { font-family: var(--f-mono); }
 .reg-form { gap: 14px; }
 .reg-form .field { gap: 6px; }
-.reg-form input[type=text], .reg-form input[type=email] { padding: 10px 13px; font-size: .97rem; border-radius: 12px; }
-.reg-form .sm { --sm-pad: 10px 34px 10px 13px; --sm-radius: 12px; }
-.reg-form .sm-btn { font-size: .97rem; }
+.reg-form input[type=text], .reg-form input[type=email] { padding: 10px 13px; font-size: .95rem; border-radius: 8px; }
+.reg-form .sm { --sm-pad: 10px 34px 10px 13px; --sm-radius: 8px; }
+.reg-form .sm-btn { font-size: .95rem; }
 .reg-form .sm-btn::after { right: 15px; }
 .pick-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; align-items: start; }
 .pledge-box { display: grid; gap: 10px; }
@@ -240,11 +254,12 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 .pledge-box .tick { margin-top: 2px; font-size: .92rem; }
 .reg-form .submit-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; justify-items: center; }
 .reg-form .submit-row .hint { max-width: none; margin: 0; text-align: center; }
-#submitBtn { width: 100%; gap: 10px; padding: 17px 24px; font-size: 1.02rem; }
+#submitBtn { width: 100%; gap: 10px; padding: 16px 24px; border-radius: 10px; font: 600 1rem/1 var(--f-mono); color: var(--ink); }
+#submitBtn:not([disabled]):hover { background: #FF8436; transform: none; box-shadow: 0 0 0 4px rgba(243,112,33,.28); }
 #submitBtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
 #submitBtn:not([disabled]):hover svg { transform: translateX(3px); }
 .reg-cta .done { gap: 14px; }
-.done-sum { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .done-sum div { padding: 10px 12px; border-radius: 12px; background: #FFF6EF; min-width: 0; }
+.done-sum { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .done-sum div { padding: 10px 12px; border-radius: 8px; background: #FFF0E5; min-width: 0; }
 .done-sum dt { font: 600 .7rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--orange-deep); } .done-sum dd { margin: 4px 0 0; font-weight: 600; overflow-wrap: anywhere; }
 .demo-note[hidden] { display: none; }
 /* Các dòng trong form/xác nhận hiện lần lượt khi tầng của nó mở */
@@ -262,6 +277,7 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 }
 @media (prefers-reduced-motion: reduce) {
   .reg-cta, .cta-fold, .cta-fold.is-shut, .cta-fold.is-shut > .fold-in { transition: none; }
+  .reg-cta h2::after { animation: none; }
   .cta-fold:not(.is-shut) .reg-form > *, .cta-fold:not(.is-shut) .done > * { animation: none; }
   #submitBtn svg { transition: none; }
 }
