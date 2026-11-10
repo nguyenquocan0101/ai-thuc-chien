@@ -109,7 +109,7 @@ export const I18N = {
   }
 };
 
-export let LANG = "vi";
+export let LANG = "en";
 try { const s = localStorage.getItem("atc-lang"); if (s === "en" || s === "vi") LANG = s; } catch (e) {}
 export const t = k => I18N[LANG][k];
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
