@@ -12,7 +12,7 @@ export function initQuiz() {
     { ok: true, file: "tests/email.test.js",
       vi: ["Viết test cho hàm kiểm tra email trường @fpt.edu.vn.", "Đoạn này ổn: test có cả email viết hoa và email giả đuôi .com, đúng những chỗ AI hay bỏ sót. AI đề xuất, còn bạn là người quyết định test vậy đã đủ chưa."],
       en: ["Write tests for the @fpt.edu.vn email check.", "This one is fine: it covers an all-caps email and a fake one ending in .com, exactly where AI tends to slip. AI suggests; you decide whether the tests are enough."],
-      d: ["+test(\"accepts only @fpt.edu.vn\", () => {", "+  expect(isSchoolEmail(\"an@fpt.edu.vn\")).toBe(true);", "+  expect(isSchoolEmail(\"AN@FPT.EDU.VN\")).toBe(true);", "+  expect(isSchoolEmail(\"an@fpt.edu.vn.com\")).toBe(false);", "+});"] },
+      d: ["+test(\"accepts only @fpt.edu.vn\", () => {", "+  expect(isSchoolEmail(\"tptvt@fpt.edu.vn\")).toBe(true);", "+  expect(isSchoolEmail(\"tuanvu@FPT.EDU.VN\")).toBe(true);", "+  expect(isSchoolEmail(\"vuvathinh@fpt.edu.vn.com\")).toBe(false);", "+});"] },
     { ok: false, file: "src/api.js",
       vi: ["Deploy bản demo lên mạng để cả lớp cùng thử.", "Web đã lên mạng nhưng vẫn gọi API ở localhost, nên trên máy người khác bấm nút nào cũng lỗi, đúng lúc demo. Đưa địa chỉ API vào biến môi trường là xong."],
       en: ["Deploy the demo so the whole class can try it.", "The site is live but still calls the API on localhost, so every button fails on anyone else's machine, right at demo time. Move the API URL into an environment variable."],
