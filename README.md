@@ -33,6 +33,7 @@ npm run preview   # chạy thử bản build
 | `src/lib/admins.js` | Email được vào `/admin` (phải khớp `firestore.rules`) |
 | `src/styles/` | CSS: `base.css`, `hero-stage.css`, `showcase.css`, `admin.css` |
 | `firestore.rules`, `firebase.json`, `.firebaserc` | Luật bảo mật Firestore và cấu hình deploy |
+| `tools/sheets-sync/` | Apps Script đồng bộ đăng ký từ Firestore sang Google Sheet |
 
 ## Firebase
 
@@ -57,6 +58,29 @@ Cài đặt một lần trên Firebase Console (CLI không làm được):
 2. **Authentication → Settings → Authorized domains**: thêm `ai-thuc-chien-ashen.vercel.app` (và tên miền riêng nếu có). `localhost` đã có sẵn.
 
 Đặt `firebaseConfig = null` trong `src/lib/firebase-config.js` thì form chạy thử: bấm gửi không lưu gì.
+
+## Đồng bộ sang Google Sheet
+
+`tools/sheets-sync/` là một Apps Script gắn vào file Sheet. Script đọc `registrations` rồi thêm dòng cho các email chưa có trong tab. Script không xoá và không sửa dòng đã có, kể cả dòng nhập tay.
+
+Cài một lần:
+
+1. Mở file Sheet, vào **Extensions → Apps Script**.
+2. Bấm **Project Settings** (bánh răng) và tick **Show "appsscript.json" manifest file in editor**.
+3. Quay lại **Editor**. Dán nội dung `Code.gs` vào file `Code.gs`, dán `appsscript.json` vào file cùng tên, rồi bấm Save.
+4. Nếu tab nhận dữ liệu khác tab có `gid=1176171014` trên URL, sửa `SHEET_GID` ở đầu `Code.gs`.
+5. Chọn hàm `syncNow` rồi bấm **Run**. Lần đầu Google hỏi cấp quyền, chọn tài khoản là Owner hoặc Editor của project Firebase `ai-thuc-chien-fa26`.
+6. Tải lại Sheet. Menu **Firebase** sẽ xuất hiện; chọn **Bật tự đồng bộ (15 phút)**.
+
+Yêu cầu với tab nhận dữ liệu:
+
+- Dòng 1 là tiêu đề và có một cột chứa chữ "Email".
+- Các cột họ tên, ngành, kỳ, MSSV, thời gian đăng ký được nhận theo tiêu đề và có thể có hoặc không.
+
+Lưu ý:
+
+- Mỗi lần đồng bộ đọc toàn bộ collection. Hạn mức miễn phí của Firestore là 50.000 lượt đọc mỗi ngày, vì vậy đừng đặt dưới 15 phút khi đã có vài trăm đăng ký.
+- Bản ghi bị xoá trên Firebase không tự biến mất khỏi Sheet.
 
 ## Thư viện ngoài
 
