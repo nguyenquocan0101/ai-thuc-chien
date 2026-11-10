@@ -4,7 +4,7 @@ export const I18N = {
     "doc.title": "AI Thực Chiến FA26",
     "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
     "hero.sub": "Từ yêu cầu đến phần mềm chạy thật. AI hỗ trợ từng bước, bạn kiểm chứng và quyết định.",
-    "hero.cta": "Đăng ký miễn phí", "hero.cta2": "Xem nội dung", "hero.scroll": "Cuộn để khám phá",
+    "hero.cta": "Đăng ký ngay", "hero.cta2": "Xem nội dung", "hero.scroll": "Cuộn để khám phá",
     "val.eyebrow": "Chương trình", "val.title": "Học làm phần mềm khi AI là đồng đội.",
     "val.k1": "Quy trình", "val.h1": "Không chỉ là công cụ", "val.p1": "Bạn đưa AI vào từng bước của quy trình: phân tích yêu cầu, thiết kế, lập trình và kiểm thử. Mục tiêu là biết dùng AI đúng chỗ, không phải thuộc lòng một công cụ.",
     "val.k2": "Kiểm chứng", "val.h2": "AI đề xuất, bạn quyết định", "val.p2": "AI có thể viết sai, bịa API hoặc bỏ sót trường hợp. Bạn tập viết test, đọc diff và review code để kiểm chứng mọi thứ AI tạo ra, và tự chịu trách nhiệm với quyết định cuối cùng.",
