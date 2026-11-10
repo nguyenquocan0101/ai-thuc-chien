@@ -1,5 +1,5 @@
 import { LANG } from "../i18n.js";
-import { reduce, tr } from "./utils.js";
+import { reduce } from "./utils.js";
 
 export function initQuiz() {
   /* ---------- "Soi code AI" dạng diff: mỗi tab là một đoạn AI viết, đỏ là chỗ sai, xanh là cách sửa ---------- */
@@ -19,8 +19,8 @@ export function initQuiz() {
       d: [" // src/api.js", "-export const API_URL = \"http://localhost:3000\";", "+export const API_URL = import.meta.env.VITE_API_URL;", " ", " $ vercel --prod", " ✓ Deployed to ai-thuc-chien.vercel.app"] },
   ];
   const QT = {
-    vi: { app: "Soi code AI", sub: "Mỗi tab là một đoạn AI viết thật. Dòng đỏ là chỗ AI sai, dòng xanh là cách sửa bạn sẽ tự làm được sau khóa học.", you: "Bạn nhờ AI", ai: "Thay đổi AI đề xuất", fix: "Cần sửa", pass: "Đạt", review: "Bạn review", next: "Đoạn tiếp" },
-    en: { app: "Spot the AI bug", sub: "Each tab is real code an AI wrote. Red lines are where it went wrong, green lines are the fix you'll be able to make yourself after the course.", you: "You asked AI", ai: "AI's proposed change", fix: "Needs a fix", pass: "Approved", review: "Your review", next: "Next one" },
+    vi: { you: "Bạn nhờ AI", ai: "Thay đổi AI đề xuất", fix: "Cần sửa", pass: "Đạt" },
+    en: { you: "You asked AI", ai: "AI's proposed change", fix: "Needs a fix", pass: "Approved" },
   };
   const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const paint = s => esc(s).replace(/("[^"]*"|'[^']*')/g, '<span class="s">$1</span>').replace(/^(\s*\/\/.*)$/, '<span class="c">$1</span>').replace(/^(\$ .*)$/, '<span class="c">$1</span>');
@@ -29,20 +29,18 @@ export function initQuiz() {
   const L = () => QT[LANG] || QT.vi;
   const renderQ = () => {
     const q = QZ[cur], l = L(), txt = q[LANG] || q.vi;
-    const add = q.d.filter(x => x[0] === "+").length, del = q.d.filter(x => x[0] === "-").length;
-    let o = 0, nw = 0;
+    let nw = 0;
     const rows = q.d.map(x => {
       const t = x[0], c = x.slice(1), cls = t === "+" ? "add" : t === "-" ? "del" : "";
-      const a = t === "+" ? "" : ++o, b = t === "-" ? "" : ++nw;
-      return `<div class="ln ${cls}"><span class="g">${a}</span><span class="g">${b}</span><span class="sg">${t === " " ? "" : t === "-" ? "−" : "+"}</span><code>${paint(c)}</code></div>`;
+      const b = t === "-" ? "" : ++nw;
+      return `<div class="ln ${cls}"><span class="g">${b}</span><span class="sg">${t === " " ? "" : t === "-" ? "−" : "+"}</span><code>${paint(c)}</code></div>`;
     }).join("");
     ma.innerHTML = `<div class="qz-win">
-      <div class="qz-bar"><i></i><i></i><i></i><b>${l.app}</b><span class="qz-file">${q.file}</span><span class="qz-stat"><em class="p">+${add}</em> <em class="m">−${del}</em></span></div>
+      <div class="qz-bar"><i></i><i></i><i></i><span class="qz-file">${q.file}</span></div>
       <div class="qz-body">
-        <p class="qz-sub">${l.sub}</p>
-        <div class="qz-ask"><span>${l.you} · ${tr("val.k" + (cur + 1))}</span><p>${esc(txt[0])}</p></div>
+        <p class="qz-ask"><span>${l.you}</span>${esc(txt[0])}</p>
         <div class="qz-code" aria-label="${l.ai}">${rows}</div>
-        <div class="qz-res ${q.ok ? "hit" : "miss"}" role="status"><b><span class="qz-v">${q.ok ? "✓ " + l.pass : "✗ " + l.fix}</span> ${l.review}</b><p>${esc(txt[1])}</p></div>
+        <div class="qz-res ${q.ok ? "hit" : "miss"}" role="status"><span class="qz-v">${q.ok ? "✓ " + l.pass : "✗ " + l.fix}</span><p>${esc(txt[1])}</p></div>
       </div></div>`;
     tabsL.forEach((b, i) => { b.classList.toggle("on", i === cur); b.setAttribute("aria-selected", i === cur); });
   };
