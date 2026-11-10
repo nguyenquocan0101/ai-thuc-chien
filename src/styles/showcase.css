@@ -278,12 +278,11 @@ html:has(.reg-dlg[open]) { overflow: hidden; }
 .reg-dlg form { gap: 16px; padding: 18px 22px 22px; }
 #rInfo { gap: 16px; }
 .pick-row { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 12px; align-items: start; }
-.pledge-box { display: grid; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--bg-alt); box-shadow: inset 0 0 0 1px var(--line); }
+.pledge-box { display: grid; gap: 10px; }
 .pledge-box > b { font-size: .95rem; }
 .pledge-list ol { margin: 0; padding-left: 20px; display: grid; grid-template-columns: 1fr; gap: 2px; font-size: .86rem; line-height: 1.45; color: #3D3846; }
 .pledge-list li::marker { color: var(--orange-deep); font-weight: 700; }
-.pledge-box .tick { padding: 10px 12px; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); font-size: .92rem; transition: box-shadow .15s, background-color .15s; }
-.pledge-box .tick:has(input:checked) { background: #FFFAF6; box-shadow: inset 0 0 0 1.5px var(--orange); }
+.pledge-box .tick { margin-top: 2px; font-size: .92rem; }
 #submitBtn { padding: 15px 24px; }
 @media (max-width: 560px) {
   .reg-dlg form { gap: 14px; padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
@@ -304,8 +303,7 @@ html:has(.reg-dlg[open]) { overflow: hidden; }
 .reg-dlg .sm { --sm-pad: 9px 34px 9px 12px; --sm-radius: 11px; }
 .reg-dlg .sm-btn { font-size: .95rem; }
 .reg-dlg .sm-btn::after { right: 15px; }
-.pledge-box { gap: 8px; padding: 12px 14px; }
-.pledge-box .tick { padding: 9px 12px; }
+.pledge-box { gap: 8px; }
 #submitBtn { padding: 14px 24px; }
 @media (max-width: 480px) {
   .reg-dlg .acct { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
