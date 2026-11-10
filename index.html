@@ -62,20 +62,24 @@
     </div>
   </section>
 
-  <section class="band glow reg" id="dang-ky">
+  <section class="band reg" id="dang-ky">
     <div class="inner">
 
       <div class="reg-cta rv">
-        <p class="cta-pill" id="ctaWhen"><span class="cta-dot" aria-hidden="true"></span><span></span></p>
-        <h2 data-i18n="r.ctaT"></h2>
-        <p class="r-lead" data-i18n="r.ctaP"></p>
-        <ul class="cta-perks">
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk1"></span></li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk2"></span></li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk3"></span></li>
-        </ul>
-        <button type="button" class="btn btn-primary reg-go" id="gBtn"><span data-i18n="r.join"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-        <p class="err" id="e-login" role="alert"></p>
+        <div class="cta-main">
+          <p class="cta-when" id="ctaWhen"><span></span></p>
+          <h2 data-i18n="r.ctaT"></h2>
+          <p class="r-lead" data-i18n="r.ctaP"></p>
+        </div>
+        <div class="cta-side">
+          <ul class="cta-perks">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk1"></span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk2"></span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk3"></span></li>
+          </ul>
+          <button type="button" class="btn btn-primary reg-go" id="gBtn"><span data-i18n="r.join"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <p class="err" id="e-login" role="alert"></p>
+        </div>
       </div>
 
       <dialog class="reg-dlg" id="regDlg" aria-labelledby="regDlgT">
