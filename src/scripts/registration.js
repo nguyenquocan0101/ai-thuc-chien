@@ -10,7 +10,9 @@ const FIREBASE_CONFIG = firebaseConfig;
 let fbMod = null;
 const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").then(m => (fbMod = m));
 Object.assign(I18N.vi, {
-  "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, đăng nhập bằng tài khoản Google bất kỳ.",
+  "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Hai tuần thực chiến làm phần mềm cùng AI. Đăng nhập bằng tài khoản Google bất kỳ để giữ chỗ.",
+  "r.ctaFree": "Miễn phí", "r.ctaNote": "Chỉ mất khoảng 1 phút",
+  "r.perk1": "Miễn phí cho sinh viên FPT", "r.perk2": "6 chặng thực hành", "r.perk3": "Làm ra sản phẩm chạy được",
   "r.close": "Đóng",
   "r.join": "Tham gia ngay",
   "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
@@ -21,7 +23,9 @@ Object.assign(I18N.vi, {
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
-  "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, sign in with any Google account.",
+  "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Two weeks of hands-on software engineering with AI. Sign in with any Google account to save your spot.",
+  "r.ctaFree": "Free", "r.ctaNote": "Takes about a minute",
+  "r.perk1": "Free for FPT students", "r.perk2": "6 hands-on stages", "r.perk3": "Ship software that really runs",
   "r.close": "Close",
   "r.join": "Join now",
   "r.eFail": "Sign-in didn't go through. Please try again.",
@@ -41,6 +45,10 @@ export function initRegistration() {
   for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
   const labelTerms = () => [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
   labelTerms(); addEventListener("langchange", labelTerms);
+  // Thời gian học trên nhãn CTA lấy từ course.js; chưa có thì ẩn
+  const ctaWhen = $("ctaWhen");
+  const showWhen = () => { const p = pick(COURSE.period); ctaWhen.textContent = p || ""; ctaWhen.hidden = !p; };
+  showWhen(); addEventListener("langchange", showWhen);
   // Tên tài khoản FPT có đuôi khóa/cơ sở: "Nguyen Quoc An (K18 HCM)" → "Nguyen Quoc An"
   const shortName = n => String(n || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(n || "").trim();
 
