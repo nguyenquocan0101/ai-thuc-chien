@@ -3,18 +3,17 @@ import { COURSE } from "./course.js";
 import { firebaseConfig } from "../lib/firebase-config.js";
 import { isAdminEmail } from "../lib/admins.js";
 
-/* ===== Đăng ký: Google (@fpt.edu.vn) → thông tin sinh viên → cam kết ===== */
+/* ===== Đăng ký: Google → thông tin sinh viên → cam kết ===== */
 // Cấu hình ở src/lib/firebase-config.js. Để null thì trang dùng cửa sổ mô phỏng (bản xem trước, không gửi dữ liệu đi đâu).
 const FIREBASE_CONFIG = firebaseConfig;
 // SDK tách chunk riêng, nạp sẵn khi trang rảnh để bấm "Tiếp tục với Google" mở popup ngay (không bị chặn popup)
 let fbMod = null;
 const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").then(m => (fbMod = m));
-const SCHOOL_DOMAIN = "fpt.edu.vn";
 Object.assign(I18N.vi, {
-  "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, chỉ cần tài khoản @fpt.edu.vn.",
+  "r.title": "Đăng ký ngay", "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Đăng ký ngay. Miễn phí cho sinh viên FPT, đăng nhập bằng tài khoản Google bất kỳ.",
   "r.close": "Đóng",
   "r.join": "Tham gia ngay",
-  "r.eDomain": "Tài khoản này không phải mail trường. Hãy đăng nhập bằng email @fpt.edu.vn.", "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
+  "r.eFail": "Đăng nhập chưa thành công, bạn thử lại nhé.",
   "r.verified": "Đã xác minh", "r.switch": "Đổi tài khoản", "r.major": "Ngành học",
   "r.mockTag": "Bản xem trước · mô phỏng Google", "r.mockT": "Chọn tài khoản để tiếp tục", "r.gmail": "Email Google", "r.cancel": "Hủy", "r.next": "Tiếp tục",
   "r.sumId": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
@@ -22,10 +21,10 @@ Object.assign(I18N.vi, {
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
 });
 Object.assign(I18N.en, {
-  "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, all you need is your @fpt.edu.vn account.",
+  "r.title": "Register now", "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Register now. Free for FPT students, sign in with any Google account.",
   "r.close": "Close",
   "r.join": "Join now",
-  "r.eDomain": "That isn't a school account. Please sign in with your @fpt.edu.vn email.", "r.eFail": "Sign-in didn't go through. Please try again.",
+  "r.eFail": "Sign-in didn't go through. Please try again.",
   "r.verified": "Verified", "r.switch": "Switch account", "r.major": "Major",
   "r.mockTag": "Preview · simulated Google", "r.mockT": "Choose an account to continue", "r.gmail": "Google email", "r.cancel": "Cancel", "r.next": "Continue",
   "r.sumId": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
@@ -44,17 +43,13 @@ export function initRegistration() {
   labelTerms(); addEventListener("langchange", labelTerms);
   // Tên tài khoản FPT có đuôi khóa/cơ sở: "Nguyen Quoc An (K18 HCM)" → "Nguyen Quoc An"
   const shortName = n => String(n || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(n || "").trim();
-  const isSchool = e => new RegExp("^[^\\s@]+@" + SCHOOL_DOMAIN.replace(/\./g, "\\.") + "$", "i").test(String(e || "").trim());
 
   // --- Firebase thật (chỉ chạy khi có FIREBASE_CONFIG) ---
   const fbSignIn = async () => {
-    const { signInWithGoogle, signOutUser } = fbMod || await fb();
-    const u = await signInWithGoogle({ hd: SCHOOL_DOMAIN });
-    if (!isSchool(u.email)) {
-      // Admin dùng Gmail: giữ phiên đăng nhập và chuyển sang trang quản trị
-      if (isAdminEmail(u.email)) { location.assign("/admin/"); return new Promise(() => {}); }
-      await signOutUser(); throw "domain";
-    }
+    const { signInWithGoogle } = fbMod || await fb();
+    const u = await signInWithGoogle();
+    // Admin: giữ phiên đăng nhập và chuyển sang trang quản trị
+    if (isAdminEmail(u.email)) { location.assign("/admin/"); return new Promise(() => {}); }
     return { uid: u.uid, name: u.displayName || u.email.split("@")[0], email: u.email, photo: u.photoURL };
   };
   // Đã đăng ký trước đó: điền lại form để sửa
@@ -74,7 +69,7 @@ export function initRegistration() {
     gMock.hidden = false; document.body.classList.add("no-scroll"); setTimeout(() => nm.focus(), 30);
     const close = () => { gMock.hidden = true; document.body.classList.remove("no-scroll"); $("gmOk").onclick = $("gmCancel").onclick = null; };
     $("gmCancel").onclick = () => { close(); no("cancel"); };
-    $("gmOk").onclick = () => { const e = ml.value.trim(); close(); if (!isSchool(e)) return no("domain"); ok({ name: nm.value.trim() || e.split("@")[0], email: e, photo: "" }); };
+    $("gmOk").onclick = () => { const e = ml.value.trim(); close(); if (!/^[^\s@]+@[^\s@]+$/.test(e)) return no("fail"); ok({ name: nm.value.trim() || e.split("@")[0], email: e, photo: "" }); };
   });
 
   const showPane = p => { [paneI, done].forEach(x => x.hidden = x !== p); };
@@ -98,7 +93,7 @@ export function initRegistration() {
     try { user = FIREBASE_CONFIG ? await fbSignIn() : await mockSignIn(); }
     catch (x) {
       if (x === "cancel" || x?.code === "auth/popup-closed-by-user" || x?.code === "auth/cancelled-popup-request") return "cancel";
-      e.dataset.key = x === "domain" ? "r.eDomain" : "r.eFail"; e.textContent = t(e.dataset.key); return "error";
+      e.dataset.key = "r.eFail"; e.textContent = t(e.dataset.key); return "error";
     }
     renderAcct(); suggestId(); showPane(paneI); sync();
     if (FIREBASE_CONFIG) prefill();
@@ -131,12 +126,13 @@ export function initRegistration() {
   cPledge.addEventListener("change", sync);
 
   const idInput = $("f-id"), idHint = $("h-id");
-  // MSSV nằm cuối phần trước @ của mail trường (annqse183962@fpt.edu.vn → SE183962): điền sẵn, sinh viên vẫn sửa được
+  // Mail trường có MSSV ở cuối phần trước @ (annqse183962@fpt.edu.vn → SE183962): điền sẵn, sinh viên vẫn sửa được.
+  // Chỉ gợi ý với @fpt.edu.vn: mail khác (vd. Gmail) dễ khớp nhầm.
   let suggestedId = "";
   const setIdHint = on => { idHint.dataset.i18n = on ? "r.idFromMail" : "f.idHint"; idHint.textContent = t(idHint.dataset.i18n); };
   const suggestId = () => {
     if (idInput.value && idInput.value !== suggestedId) return; // sinh viên đã tự nhập
-    const m = /([a-z]{2})(\d{6})@/i.exec(user.email);
+    const m = /([a-z]{2})(\d{6})@fpt\.edu\.vn$/i.exec(user.email);
     suggestedId = m ? (m[1] + m[2]).toUpperCase() : "";
     idInput.value = suggestedId; setIdHint(!!suggestedId);
   };

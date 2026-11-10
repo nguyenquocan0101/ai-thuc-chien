@@ -31,8 +31,8 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 **Registration flow (`src/scripts/registration.js`).**
 - The section on the page is just a call-to-action plus a "Join now" button (`#gBtn`) that starts Google sign-in. Every `a[href="#dang-ky"]` (header, hero) is intercepted to start the same flow.
 - Google sign-in must open inside the click gesture, or popup blockers fire. The Firebase SDK is a lazy chunk (`import("../lib/firebase.js")`) preloaded on idle; the click path uses the cached module without awaiting first.
-- Only `@fpt.edu.vn` accounts may register. Admin Gmail accounts that sign in here are redirected to `/admin/`.
-- After sign-in, the form opens in `<dialog id="regDlg">` (bottom sheet on mobile). The student ID is suggested from the email (`annqse183962@fpt.edu.vn` → `SE183962`), and any existing registration is prefilled.
+- Any Google account may register (no school-domain restriction). Admin accounts that sign in here are redirected to `/admin/`.
+- After sign-in, the form opens in `<dialog id="regDlg">` (bottom sheet on mobile). For `@fpt.edu.vn` emails the student ID is suggested from the address (`annqse183962@fpt.edu.vn` → `SE183962`), and any existing registration is prefilled.
 - Do not leave a transform/translate on the dialog after its open animation (use `animation-fill-mode: backwards`); a persistent transform makes the dialog the containing block for fixed-position children.
 - With `firebaseConfig = null` in `src/lib/firebase-config.js`, the Google button opens a simulated account picker (`#gMock`) and nothing is saved. When testing with Playwright, intercept `**/src/lib/firebase-config.js*` and return `export const firebaseConfig = null;` instead of editing the file.
 

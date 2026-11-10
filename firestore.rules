@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Registrations live at /registrations/{uid}, one document per signed-in student.
-// Students may create/update only their own document; only admins may list or delete.
+// Any signed-in Google account may create/update only its own document; only admins may list or delete.
 // Keep the admin list in sync with src/lib/admins.js.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     function isStudent() {
-      return signedIn() && request.auth.token.email.lower().matches('[^@]+@fpt[.]edu[.]vn');
+      return signedIn();
     }
 
     function validRegistration(d) {

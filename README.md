@@ -25,7 +25,7 @@ npm run preview   # chạy thử bản build
 | `src/admin.js` | Logic trang quản trị: đăng nhập, xem realtime, lọc, xuất CSV |
 | `src/scripts/i18n.js` | Từ điển VI/EN, `applyLang()`, nút đổi ngôn ngữ |
 | `src/scripts/course.js` | Thông tin chương trình (thời gian, phòng, hạn đăng ký…) |
-| `src/scripts/registration.js` | Form đăng ký: Google @fpt.edu.vn → thông tin sinh viên → cam kết → lưu Firestore |
+| `src/scripts/registration.js` | Form đăng ký: đăng nhập Google → thông tin sinh viên → cam kết → lưu Firestore |
 | `src/scripts/showcase/` | Hero 3D (`hero3d.js`), "Soi code AI" (`quiz.js`), chữ 6 chặng (`copy.js`) |
 | `src/scripts/glass.js`, `reveal.js` | Tinh chỉnh liquid glass, hiệu ứng hiện dần |
 | `src/lib/firebase.js` | Khởi tạo Firebase, đăng nhập Google, đọc/ghi `registrations` |
@@ -42,7 +42,7 @@ Mỗi sinh viên có một document `registrations/{uid}`. Các trường: `uid`
 
 `firestore.rules` bảo vệ dữ liệu:
 
-- Sinh viên chỉ ghi được document của chính mình, chỉ khi đăng nhập bằng email `@fpt.edu.vn`. Dữ liệu phải hợp lệ: MSSV dạng `SE123456`, ngành nằm trong danh sách, kỳ từ 1 đến 9.
+- Sinh viên chỉ ghi được document của chính mình, khi đã đăng nhập Google (email đã xác minh, không giới hạn tên miền). Dữ liệu phải hợp lệ: MSSV dạng `SE123456`, ngành nằm trong danh sách, kỳ từ 1 đến 9.
 - Chỉ email trong danh sách admin mới đọc được toàn bộ danh sách.
 
 Thêm admin:
