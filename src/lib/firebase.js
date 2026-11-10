@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
@@ -19,24 +19,10 @@ export const signOutUser = () => signOut(auth);
 
 export const onUserChange = cb => onAuthStateChanged(auth, cb);
 
-// One document per student, keyed by Firebase uid, so re-submitting edits the same record.
-export async function getRegistration(uid) {
-  const snap = await getDoc(doc(registrations, uid));
-  return snap.exists() ? snap.data() : null;
-}
-
-export async function saveRegistration(user, fields) {
-  const ref = doc(registrations, user.uid);
-  const data = {
-    uid: user.uid,
-    name: String(user.name || user.email).slice(0, 120),
-    email: user.email,
-    ...fields,
-    updatedAt: serverTimestamp()
-  };
-  const existing = await getDoc(ref);
-  if (existing.exists()) await updateDoc(ref, data);
-  else await setDoc(ref, { ...data, createdAt: serverTimestamp() });
+// The form needs no sign-in: one document per email, keyed by the lowercased address.
+// Submitting the same email again counts as an update, which the rules deny (permission-denied).
+export async function submitRegistration({ name, email, major, term, lang }) {
+  await setDoc(doc(registrations, email), { name, email, major, term, pledge: true, lang, createdAt: serverTimestamp() });
 }
 
 export function watchRegistrations(onData, onError) {

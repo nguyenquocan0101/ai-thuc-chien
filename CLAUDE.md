@@ -26,24 +26,25 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 
 **i18n (`src/scripts/i18n.js`).** One `I18N = { vi, en }` dictionary; other modules add their own keys with `Object.assign(I18N.vi, {...})` (see `registration.js`). Markup uses `data-i18n` (text), `data-i18n-html` (HTML) and `data-i18n-ph` (placeholder); `applyLang()` fills them and dispatches a `langchange` window event that modules listen to for re-rendering dynamic text. `LANG` is an exported `let` live binding, reassigned only inside i18n.js. `src/scripts/course.js` holds program facts; `null` renders as "Sẽ cập nhật" (to be updated), and values can be strings or `{ vi, en }`.
 
-**Shared dropdown (`src/lib/select-menu.js` + `select-menu.css`).** `enhanceSelects()` turns every `<select>` into an accessible custom listbox. The native select stays the source of truth: its `value` setter and `focus()` are patched, so code reads/writes `select.value` and calls `select.focus()` normally. `data-placeholder` hides the `value=""` option. The listbox is portalled to `<body>`, or into the open `<dialog>` that contains the select (a modal dialog sits in the top layer).
+**Shared dropdown (`src/lib/select-menu.js` + `select-menu.css`).** `enhanceSelects()` turns every `<select>` into an accessible custom listbox. The native select stays the source of truth: its `value` setter and `focus()` are patched, so code reads/writes `select.value` and calls `select.focus()` normally. `data-placeholder` hides the `value=""` option. The listbox is portalled to `<body>`, or into an open `<dialog>` that contains the select (a modal dialog sits in the top layer).
 
 **Registration flow (`src/scripts/registration.js`).**
-- The section on the page is just a call-to-action plus a "Join now" button (`#gBtn`) that starts Google sign-in. Every `a[href="#dang-ky"]` (header, hero) is intercepted to start the same flow.
-- Google sign-in must open inside the click gesture, or popup blockers fire. The Firebase SDK is a lazy chunk (`import("../lib/firebase.js")`) preloaded on idle; the click path uses the cached module without awaiting first.
-- Any Google account may register (no school-domain restriction). Admin accounts that sign in here are redirected to `/admin/`.
-- After sign-in, the form opens in `<dialog id="regDlg">` (bottom sheet on mobile). For `@fpt.edu.vn` emails the student ID is suggested from the address (`annqse183962@fpt.edu.vn` → `SE183962`), and any existing registration is prefilled.
-- Do not leave a transform/translate on the dialog after its open animation (use `animation-fill-mode: backwards`); a persistent transform makes the dialog the containing block for fixed-position children.
-- With `firebaseConfig = null` in `src/lib/firebase-config.js`, the Google button opens a simulated account picker (`#gMock`) and nothing is saved. When testing with Playwright, intercept `**/src/lib/firebase-config.js*` and return `export const firebaseConfig = null;` instead of editing the file.
+- No sign-in. The `#regCta` block holds three stacked "folds": the pitch (perks + "Join now" `#gBtn`), the form `#regForm` and the success panel `#done`. Clicking `#gBtn` or any `a[href="#dang-ky"]` (header, hero) scrolls to the block, folds the pitch away and unfolds the form.
+- Folds animate `grid-template-rows` 1fr ↔ 0fr, so height follows the real content. A closed fold is `inert`; `.is-settled` drops `overflow: hidden` once a fold has finished opening so focus rings are not clipped. Reduced motion skips the transitions.
+- Fields: email, full name, major, term, the commitment checkbox. Email is trimmed and lowercased before validation and saving.
+- The Firebase SDK is a lazy chunk (`import("../lib/firebase.js")`) preloaded on idle.
+- With `firebaseConfig = null` in `src/lib/firebase-config.js`, submitting skips saving and shows a preview note. When testing with Playwright, intercept `**/src/lib/firebase-config.js*` and return `export const firebaseConfig = null;` instead of editing the file (dev server only; the build inlines the config).
 
-**Data layer (`src/lib/firebase.js`).** One document per student at `registrations/{uid}`. `saveRegistration` reads first, then `updateDoc` (keeps `createdAt`) or `setDoc` with `createdAt`; both set `updatedAt: serverTimestamp()`. `watchRegistrations` drives the admin table in realtime. The admin page adds search, a major filter and CSV export (BOM, formula-injection guard).
+**Data layer (`src/lib/firebase.js`).** `submitRegistration` writes `registrations/{email}` (lowercased email as the doc id) with `setDoc` and `createdAt: serverTimestamp()`. The same email twice is an update, which the rules deny with `permission-denied`; the client shows that as "already registered". Google sign-in (`signInWithGoogle`, `onUserChange`) is only used by the admin page. `watchRegistrations` drives the admin table in realtime; the admin page adds search, a major filter and CSV export (BOM, formula-injection guard). Older documents at `registrations/{uid}` from the earlier Google sign-in flow carry `uid`, `studentId` and `updatedAt`.
 
 **Security lives in `firestore.rules`, not the client.**
-- Rules require a verified email and exactly the field set `uid, name, email, studentId, major, term, pledge, lang, createdAt, updatedAt`.
-- Value rules: `studentId` matches `[A-Z]{2}[0-9]{6}`, `major` is in `SE|AI|IA|IS|OTHER`, `term` is a string `"1"`–`"9"`, `pledge == true`, and the timestamps equal `request.time`.
+- Anyone may create `registrations/{id}` when `id == email`, the email is lowercase and shaped like an address, and the field set is exactly `name, email, major, term, pledge, lang, createdAt`. Only admins may read, list or delete.
+- Value rules: `major` is in `SE|AI|IA|IS|OTHER`, `term` is a string `"1"`–`"9"`, `pledge == true`, and `createdAt == request.time`.
+- Emails are not verified and the open create path can be scripted; App Check would be the next step if spam shows up.
+- The rules still accept the old signed-in `registrations/{uid}` writes so pages opened before the switch keep working; that path can be removed later.
 - Changing a form field or a major code means updating the client validation, `src/admin.js` (`MAJORS`) and the rules together.
 - The admin email list is duplicated in `src/lib/admins.js` (UI gate) and `firestore.rules` (the real protection) and must stay in sync.
 
-**Firebase Console setup the CLI can't do:** enable the Google sign-in provider, and add each serving domain under Authentication → Settings → Authorized domains.
+**Firebase Console setup the CLI can't do:** the admin page signs in with Google, so keep the Google provider enabled and each serving domain listed under Authentication → Settings → Authorized domains.
 
 **External assets:** three.js r128 (cdnjs) and `@real-human/liquid-glass` 1.2.0 (jsdelivr) are loaded from CDNs in `index.html`, not npm.

@@ -25,10 +25,10 @@ npm run preview   # chạy thử bản build
 | `src/admin.js` | Logic trang quản trị: đăng nhập, xem realtime, lọc, xuất CSV |
 | `src/scripts/i18n.js` | Từ điển VI/EN, `applyLang()`, nút đổi ngôn ngữ |
 | `src/scripts/course.js` | Thông tin chương trình (thời gian, phòng, hạn đăng ký…) |
-| `src/scripts/registration.js` | Form đăng ký: đăng nhập Google → thông tin sinh viên → cam kết → lưu Firestore |
+| `src/scripts/registration.js` | Form đăng ký mở ngay trong khối CTA: email, họ tên, ngành, kỳ, cam kết → lưu Firestore (không cần đăng nhập) |
 | `src/scripts/showcase/` | Hero 3D (`hero3d.js`), "Soi code AI" (`quiz.js`), chữ 6 chặng (`copy.js`) |
 | `src/scripts/glass.js`, `reveal.js` | Tinh chỉnh liquid glass, hiệu ứng hiện dần |
-| `src/lib/firebase.js` | Khởi tạo Firebase, đăng nhập Google, đọc/ghi `registrations` |
+| `src/lib/firebase.js` | Khởi tạo Firebase, ghi `registrations`, đăng nhập Google cho trang admin |
 | `src/lib/firebase-config.js` | Cấu hình web của project `ai-thuc-chien-fa26` |
 | `src/lib/admins.js` | Email được vào `/admin` (phải khớp `firestore.rules`) |
 | `src/styles/` | CSS: `base.css`, `hero-stage.css`, `showcase.css`, `admin.css` |
@@ -38,11 +38,12 @@ npm run preview   # chạy thử bản build
 
 Project: `ai-thuc-chien-fa26` (Firestore ở `asia-southeast1`).
 
-Mỗi sinh viên có một document `registrations/{uid}`. Các trường: `uid`, `name`, `email`, `studentId`, `major`, `term`, `pledge`, `lang`, `createdAt`, `updatedAt`. Gửi lại form sẽ cập nhật đúng document đó, không tạo bản trùng.
+Mỗi email có một document `registrations/{email}` (email viết thường). Các trường: `name`, `email`, `major`, `term`, `pledge`, `lang`, `createdAt`. Gửi lại cùng email sẽ bị từ chối, form báo "email đã đăng ký". Các đăng ký cũ (thời còn đăng nhập Google) nằm ở `registrations/{uid}` và có thêm `uid`, `studentId`, `updatedAt`.
 
 `firestore.rules` bảo vệ dữ liệu:
 
-- Sinh viên chỉ ghi được document của chính mình, khi đã đăng nhập Google (email đã xác minh, không giới hạn tên miền). Dữ liệu phải hợp lệ: MSSV dạng `SE123456`, ngành nằm trong danh sách, kỳ từ 1 đến 9.
+- Ai cũng gửi được form, không cần đăng nhập, nhưng chỉ tạo mới được một lần cho mỗi email và không sửa được. Dữ liệu phải hợp lệ: email đúng dạng, ngành nằm trong danh sách, kỳ từ 1 đến 9, đã tick cam kết.
+- Email không được xác minh, và form mở có thể bị spam bằng script. Nếu gặp spam, bật Firebase App Check.
 - Chỉ email trong danh sách admin mới đọc được toàn bộ danh sách.
 
 Thêm admin:
@@ -52,10 +53,10 @@ Thêm admin:
 
 Cài đặt một lần trên Firebase Console (CLI không làm được):
 
-1. **Authentication → Get started → Sign-in method → Google → Enable**.
+1. **Authentication → Get started → Sign-in method → Google → Enable** (trang admin đăng nhập bằng Google).
 2. **Authentication → Settings → Authorized domains**: thêm `ai-thuc-chien-ashen.vercel.app` (và tên miền riêng nếu có). `localhost` đã có sẵn.
 
-Đặt `firebaseConfig = null` trong `src/lib/firebase-config.js` thì nút Google mở cửa sổ mô phỏng (bản xem trước, không lưu gì).
+Đặt `firebaseConfig = null` trong `src/lib/firebase-config.js` thì form chạy thử: bấm gửi không lưu gì.
 
 ## Thư viện ngoài
 

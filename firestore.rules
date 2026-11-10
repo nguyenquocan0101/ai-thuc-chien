@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// Registrations live at /registrations/{uid}, one document per signed-in student.
-// Any signed-in Google account may create/update only its own document; only admins may list or delete.
+// Registrations live at /registrations/{email}: the form needs no sign-in, so anyone may create a document
+// keyed by its lowercased email, once (a second submit is an update and is denied). Only admins may read, list or delete.
+// Older documents at /registrations/{uid} came from the Google sign-in flow; that path stays until open pages reload.
 // Keep the admin list in sync with src/lib/admins.js.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -20,6 +21,22 @@ service cloud.firestore {
       return signedIn();
     }
 
+    function validOpenRegistration(id, d) {
+      let fields = ['name', 'email', 'major', 'term', 'pledge', 'lang', 'createdAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.email is string && d.email.size() <= 254
+        && d.email == d.email.lower()
+        && d.email.matches('[^@ /]+@[^@ /]+[.][^@ /]+')
+        && id == d.email
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && d.major in ['SE', 'AI', 'IA', 'IS', 'OTHER']
+        && d.term is string && d.term.matches('[1-9]')
+        && d.pledge == true
+        && d.lang in ['vi', 'en']
+        && d.createdAt == request.time;
+    }
+
+    // Shape written by the old Google sign-in flow
     function validRegistration(d) {
       let fields = ['uid', 'name', 'email', 'studentId', 'major', 'term', 'pledge', 'lang', 'createdAt', 'updatedAt'];
       return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
@@ -34,13 +51,14 @@ service cloud.firestore {
         && d.updatedAt == request.time;
     }
 
-    match /registrations/{uid} {
-      allow get: if isAdmin() || (isStudent() && request.auth.uid == uid);
+    match /registrations/{id} {
+      allow get: if isAdmin() || (isStudent() && request.auth.uid == id);
       allow list: if isAdmin();
-      allow create: if isStudent() && request.auth.uid == uid
-        && validRegistration(request.resource.data)
-        && request.resource.data.createdAt == request.time;
-      allow update: if isStudent() && request.auth.uid == uid
+      allow create: if validOpenRegistration(id, request.resource.data)
+        || (isStudent() && request.auth.uid == id
+          && validRegistration(request.resource.data)
+          && request.resource.data.createdAt == request.time);
+      allow update: if isStudent() && request.auth.uid == id
         && validRegistration(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isAdmin();

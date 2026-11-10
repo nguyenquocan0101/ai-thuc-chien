@@ -65,97 +65,81 @@
   <section class="band reg" id="dang-ky">
     <div class="inner">
 
-      <div class="reg-cta rv">
+      <div class="reg-cta rv" id="regCta">
         <div class="cta-main">
           <p class="cta-when" id="ctaWhen"><span></span></p>
-          <h2 data-i18n="r.ctaT"></h2>
+          <h2 id="ctaT" data-i18n="r.ctaT"></h2>
           <p class="r-lead" data-i18n="r.ctaP"></p>
         </div>
         <div class="cta-side">
-          <ul class="cta-perks">
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk1"></span></li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk2"></span></li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk3"></span></li>
-          </ul>
-          <button type="button" class="btn btn-primary reg-go" id="gBtn"><span data-i18n="r.join"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-          <p class="err" id="e-login" role="alert"></p>
-        </div>
-      </div>
-
-      <dialog class="reg-dlg" id="regDlg" aria-labelledby="regDlgT">
-        <form id="regForm" novalidate>
-          <div class="dlg-head">
-            <h2 id="regDlgT" data-i18n="r.title"></h2>
-            <button type="button" class="dlg-x" id="regClose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span class="sr-only" data-i18n="r.close"></span></button>
+          <!-- Ba tầng gấp/mở trong cùng một cột: lời mời, form, đã nhận. Chiều cao chuyển mượt bằng grid-template-rows -->
+          <div class="cta-fold is-settled" id="foldPitch">
+            <div class="fold-in">
+              <ul class="cta-perks">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk1"></span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk2"></span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk3"></span></li>
+              </ul>
+              <button type="button" class="btn btn-primary reg-go" id="gBtn" aria-controls="regForm" aria-expanded="false"><span data-i18n="r.join"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
           </div>
-          <div class="r-pane" id="rInfo" hidden>
-            <div class="acct">
-              <span class="av" id="acAv"></span>
-              <span class="ac-t">
-                <b id="acName"></b>
-                <span class="ac-mail"><span class="ac-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span class="sr-only" data-i18n="r.verified"></span></span><small id="acMail"></small></span>
-              </span>
-              <button type="button" class="ac-sw" id="acSwitch" data-i18n="r.switch"></button>
-            </div>
 
-            <div class="field">
-              <label for="f-id"><span data-i18n="f.id"></span> <span class="req">*</span></label>
-              <input id="f-id" name="studentId" type="text" placeholder="SE123456" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="h-id e-id">
-              <span class="hint" id="h-id" data-i18n="f.idHint"></span>
-              <span class="err" id="e-id"></span>
+          <div class="cta-fold is-shut" id="foldForm" inert>
+            <div class="fold-in">
+              <form class="reg-form" id="regForm" aria-labelledby="ctaT" novalidate>
+                <div class="field">
+                  <label for="f-email"><span data-i18n="f.email"></span> <span class="req">*</span></label>
+                  <input id="f-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="ten@gmail.com" aria-describedby="e-email">
+                  <span class="err" id="e-email"></span>
+                </div>
+                <div class="field">
+                  <label for="f-name"><span data-i18n="f.name"></span> <span class="req">*</span></label>
+                  <input id="f-name" name="name" type="text" autocomplete="name" maxlength="120" data-i18n-ph="f.namePh" aria-describedby="e-name">
+                  <span class="err" id="e-name"></span>
+                </div>
+                <div class="pick-row">
+                  <div class="field">
+                    <label for="f-major"><span data-i18n="r.major"></span> <span class="req">*</span></label>
+                    <select id="f-major" name="major" aria-describedby="e-major" data-placeholder>
+                      <option value="" data-i18n="f.majorPick"></option>
+                      <option value="SE" data-i18n="m.se"></option>
+                      <option value="AI" data-i18n="m.ai"></option>
+                      <option value="IA" data-i18n="m.ia"></option>
+                      <option value="IS" data-i18n="m.is"></option>
+                      <option value="OTHER" data-i18n="m.other"></option>
+                    </select>
+                    <span class="err" id="e-major"></span>
+                  </div>
+                  <div class="field">
+                    <label for="f-term"><span data-i18n="f.term"></span> <span class="req">*</span></label>
+                    <select id="f-term" name="term" aria-describedby="e-term" data-placeholder><option value="" data-i18n="f.termPick"></option></select>
+                    <span class="err" id="e-term"></span>
+                  </div>
+                </div>
+                <div class="pledge-box">
+                  <b data-i18n="f.pledge"></b>
+                  <div class="pledge-list" data-i18n-html="f.pledgeText"></div>
+                  <label class="tick"><input type="checkbox" id="c-pledge"> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
+                </div>
+                <div class="submit-row">
+                  <button class="btn btn-primary" type="submit" id="submitBtn" disabled><span data-i18n="f.submit"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+                  <p class="hint" id="submitHint" aria-live="polite"></p>
+                </div>
+              </form>
             </div>
+          </div>
 
-            <div class="pick-row">
-              <div class="field">
-                <label for="f-major"><span data-i18n="r.major"></span> <span class="req">*</span></label>
-                <select id="f-major" name="major" aria-describedby="e-major" data-placeholder>
-                  <option value="" data-i18n="f.majorPick"></option>
-                  <option value="SE" data-i18n="m.se"></option>
-                  <option value="AI" data-i18n="m.ai"></option>
-                  <option value="IA" data-i18n="m.ia"></option>
-                  <option value="IS" data-i18n="m.is"></option>
-                  <option value="OTHER" data-i18n="m.other"></option>
-                </select>
-                <span class="err" id="e-major"></span>
+          <div class="cta-fold is-shut" id="foldDone" inert>
+            <div class="fold-in">
+              <div class="done" id="done" tabindex="-1">
+                <span class="ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+                <h3 id="doneTitle"></h3>
+                <p id="doneText"></p>
+                <dl class="done-sum" id="doneSum"></dl>
+                <p class="demo-note" id="demoNote" data-i18n="f.demo" hidden></p>
               </div>
-              <div class="field">
-                <label for="f-term"><span data-i18n="f.term"></span> <span class="req">*</span></label>
-                <select id="f-term" name="term" aria-describedby="e-term" data-placeholder><option value="" data-i18n="f.termPick"></option></select>
-                <span class="err" id="e-term"></span>
-              </div>
-            </div>
-
-            <div class="pledge-box">
-              <b data-i18n="f.pledge"></b>
-              <div class="pledge-list" data-i18n-html="f.pledgeText"></div>
-              <label class="tick"><input type="checkbox" id="c-pledge"> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
-            </div>
-
-            <div class="submit-row">
-              <button class="btn btn-primary" type="submit" id="submitBtn" disabled><span data-i18n="f.submit"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-              <p class="hint" id="submitHint" aria-live="polite"></p>
             </div>
           </div>
-
-          <div class="done" id="done" hidden tabindex="-1">
-            <span class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
-            <h3 id="doneTitle"></h3>
-            <p id="doneText"></p>
-            <dl class="done-sum" id="doneSum"></dl>
-            <p class="demo-note" data-i18n="f.demo"></p>
-            <div><button class="btn btn-sm btn-ghost" type="button" id="againBtn" data-i18n="f.again"></button></div>
-          </div>
-        </form>
-      </dialog>
-
-
-      <div class="g-mock" id="gMock" hidden role="dialog" aria-modal="true" aria-labelledby="gmT">
-        <div class="gm-card">
-          <div class="gm-top"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.2-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span class="demo-note" data-i18n="r.mockTag"></span></div>
-          <h3 id="gmT" data-i18n="r.mockT"></h3>
-          <div class="field"><label for="gm-name" data-i18n="f.name"></label><input id="gm-name" type="text" autocomplete="name" data-i18n-ph="f.namePh"></div>
-          <div class="field"><label for="gm-mail" data-i18n="r.gmail"></label><input id="gm-mail" type="email" autocomplete="email" placeholder="ten@gmail.com"></div>
-          <div class="gm-act"><button type="button" class="btn btn-sm btn-ghost" id="gmCancel" data-i18n="r.cancel"></button><button type="button" class="btn btn-sm btn-primary" id="gmOk" data-i18n="r.next"></button></div>
         </div>
       </div>
     </div>

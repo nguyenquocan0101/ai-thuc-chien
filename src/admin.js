@@ -3,7 +3,7 @@ import { isAdminEmail } from "./lib/admins.js";
 import { enhanceSelects } from "./lib/select-menu.js";
 
 const $ = id => document.getElementById(id);
-const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Chuyên ngành khác khối IT" };
+const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Ngành khác" };
 const views = ["vLoading", "vLogin", "vDenied", "vList"];
 const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 
@@ -26,9 +26,9 @@ function render() {
   const list = filtered(), body = $("rows");
   body.replaceChildren(...list.map((r, i) => {
     const tr = document.createElement("tr");
-    [String(i + 1), r.name, r.email, r.studentId, majorName(r.major), r.term ? "Kỳ " + r.term : "—", fmtDate(r.createdAt)].forEach((v, k) => {
+    [String(i + 1), r.name, r.email, majorName(r.major), r.term ? "Kỳ " + r.term : "—", fmtDate(r.createdAt)].forEach((v, k) => {
       const td = document.createElement("td"); td.textContent = v || "—";
-      if (k === 0 || k === 3 || k === 5) td.className = "mono";
+      if (k === 0 || k === 4) td.className = "mono";
       tr.appendChild(td);
     });
     return tr;
@@ -48,7 +48,7 @@ const csvCell = v => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = "'" 
 
 function exportCsv() {
   const head = ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Đăng ký lúc", "Cập nhật lúc"];
-  const lines = filtered().map((r, i) => [i + 1, r.name, r.email, r.studentId, majorName(r.major), r.term, fmtDate(r.createdAt), fmtDate(r.updatedAt)]);
+  const lines = filtered().map((r, i) => [i + 1, r.name, r.email, r.studentId || "", majorName(r.major), r.term, fmtDate(r.createdAt), r.updatedAt ? fmtDate(r.updatedAt) : ""]);
   const csv = "﻿" + [head, ...lines].map(row => row.map(csvCell).join(",")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
