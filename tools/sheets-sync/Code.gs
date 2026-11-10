@@ -3,21 +3,24 @@
  *
  * Dán file này vào Extensions → Apps Script của chính file Sheet (xem README, mục "Đồng bộ sang Google Sheet").
  * - Chỉ THÊM dòng cho email chưa có trong tab; không xoá, không sửa dòng đã có (kể cả dòng nhập tay).
+ * - Dòng mới chèn ngay dưới tiêu đề, mới nhất ở trên (giống thứ tự file CSV xuất từ trang admin); cột STT nếu có thì đánh số tiếp.
  * - Tìm cột theo tiêu đề ở dòng 1: cột có chữ "email" là bắt buộc; các cột tên, ngành, kỳ, MSSV, thời gian nếu có thì được điền.
  * - Đọc Firestore bằng quyền IAM của tài khoản Google đang chạy script (cần là Owner/Editor của project Firebase),
  *   nên không phụ thuộc firestore.rules và không cần khoá bí mật nào.
  */
 const PROJECT_ID = "ai-thuc-chien-fa26";
 const SHEET_GID = 1176171014; // tab nhận dữ liệu (số sau "gid=" trên URL)
+const TIME_ZONE = "Asia/Ho_Chi_Minh"; // ghi giờ VN dạng chữ, giống dòng xuất từ trang admin, không phụ thuộc múi giờ của file Sheet
 const SYNC_EVERY_MINUTES = 15; // mỗi lần đồng bộ đọc toàn bộ collection: 15 phút giữ số lượt đọc trong hạn mức miễn phí
 
 const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Ngành khác" };
 
 // Nhận diện cột theo tiêu đề (không phân biệt hoa thường, bỏ dấu tiếng Việt). Thứ tự quan trọng: email trước tên, thời gian trước kỳ ("Thời gian đăng ký" có chữ "ký").
 const COLUMNS = [
+  ["stt", /^(stt|#|no.?)$/],
   ["email", /email|e-mail|mail/],
   ["studentId", /mssv|ma so|student id/],
-  ["createdAt", /thoi gian|ngay|date|time|timestamp/],
+  ["createdAt", /thoi gian|ngay|date|time|timestamp|luc/],
   ["major", /nganh|major/],
   ["term", /\bky\b|hoc ky|term|semester/],
   ["name", /ten|name/],
@@ -68,22 +71,29 @@ function syncRegistrations() {
 
     const fresh = fetchRegistrations()
       .filter(r => r.email && !known.has(normEmail(r.email)))
-      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     if (!fresh.length) return 0;
 
-    const rows = fresh.map(r => {
+    const maxStt = col.stt !== undefined && lastRow > 1
+      ? Math.max(0, ...sheet.getRange(2, col.stt + 1, lastRow - 1, 1).getValues().map(r => Number(r[0]) || 0))
+      : 0;
+    const rows = fresh.map((r, i) => {
       const row = new Array(lastCol).fill("");
+      if (col.stt !== undefined) row[col.stt] = maxStt + fresh.length - i;
       if (col.email !== undefined) row[col.email] = r.email;
       if (col.name !== undefined) row[col.name] = r.name || "";
       if (col.major !== undefined) row[col.major] = MAJORS[r.major] || r.major || "";
       if (col.term !== undefined) row[col.term] = r.term ? Number(r.term) : "";
       if (col.studentId !== undefined) row[col.studentId] = r.studentId || "";
-      if (col.createdAt !== undefined) row[col.createdAt] = r.createdAt || "";
+      if (col.createdAt !== undefined) row[col.createdAt] = r.createdAt ? Utilities.formatDate(r.createdAt, TIME_ZONE, "HH:mm dd/MM/yy") : "";
       return row;
     });
-    const start = lastRow + 1;
-    sheet.getRange(start, 1, rows.length, lastCol).setValues(rows);
-    if (col.createdAt !== undefined) sheet.getRange(start, col.createdAt + 1, rows.length, 1).setNumberFormat("dd/MM/yyyy HH:mm");
+    const start = 2;
+    sheet.insertRowsAfter(1, rows.length);
+    const target = sheet.getRange(start, 1, rows.length, lastCol);
+    // Dòng chèn dưới tiêu đề mang định dạng của tiêu đề: lấy lại định dạng của dòng dữ liệu cũ ngay bên dưới
+    if (lastRow > 1) sheet.getRange(start + rows.length, 1, 1, lastCol).copyTo(target, { formatOnly: true });
+    target.setValues(rows);
     return rows.length;
   } finally {
     lock.releaseLock();
