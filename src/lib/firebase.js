@@ -21,8 +21,8 @@ export const onUserChange = cb => onAuthStateChanged(auth, cb);
 
 // The form needs no sign-in: one document per email, keyed by the lowercased address.
 // Submitting the same email again counts as an update, which the rules deny (permission-denied).
-export async function submitRegistration({ name, email, major, term, lang }) {
-  await setDoc(doc(registrations, email), { name, email, major, term, pledge: true, lang, createdAt: serverTimestamp() });
+export async function submitRegistration({ name, email, studentId, major, term, lang }) {
+  await setDoc(doc(registrations, email), { name, email, studentId, major, term, pledge: true, lang, createdAt: serverTimestamp() });
 }
 
 export function watchRegistrations(onData, onError) {

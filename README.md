@@ -39,11 +39,11 @@ npm run preview   # chạy thử bản build
 
 Project: `ai-thuc-chien-fa26` (Firestore ở `asia-southeast1`).
 
-Mỗi email có một document `registrations/{email}` (email viết thường). Các trường: `name`, `email`, `major`, `term`, `pledge`, `lang`, `createdAt`. Gửi lại cùng email sẽ bị từ chối, form báo "email đã đăng ký". Các đăng ký cũ (thời còn đăng nhập Google) nằm ở `registrations/{uid}` và có thêm `uid`, `studentId`, `updatedAt`.
+Mỗi email có một document `registrations/{email}` (email viết thường). Các trường: `name`, `email`, `studentId` (MSSV), `major`, `term`, `pledge`, `lang`, `createdAt`. Gửi lại cùng email sẽ bị từ chối, form báo "email đã đăng ký". Các đăng ký cũ (thời còn đăng nhập Google) nằm ở `registrations/{uid}` và có thêm `uid`, `studentId`, `updatedAt`.
 
 `firestore.rules` bảo vệ dữ liệu:
 
-- Ai cũng gửi được form, không cần đăng nhập, nhưng chỉ tạo mới được một lần cho mỗi email và không sửa được. Dữ liệu phải hợp lệ: email đúng dạng, ngành nằm trong danh sách, kỳ từ 1 đến 9, đã tick cam kết.
+- Ai cũng gửi được form, không cần đăng nhập, nhưng chỉ tạo mới được một lần cho mỗi email và không sửa được. Dữ liệu phải hợp lệ: email đúng dạng, MSSV dạng `SE123456`, ngành nằm trong danh sách, kỳ từ 1 đến 9, đã tick cam kết.
 - Email không được xác minh, và form mở có thể bị spam bằng script. Nếu gặp spam, bật Firebase App Check.
 - Chỉ email trong danh sách admin mới đọc được toàn bộ danh sách.
 

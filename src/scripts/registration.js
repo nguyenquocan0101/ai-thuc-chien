@@ -11,29 +11,31 @@ const fb = () => fbMod ? Promise.resolve(fbMod) : import("../lib/firebase.js").t
 Object.assign(I18N.vi, {
   "r.ctaT": "Bạn là sinh viên IT và đang gặp khó khăn?", "r.ctaP": "Hai tuần cùng nhóm làm một ứng dụng web chạy thật, có AI code cùng. Để lại thông tin để giữ chỗ.",
   "r.perk1": "6 bước thực hành", "r.perk2": "Làm ra sản phẩm chạy được", "r.perk3": "Chứng nhận khi hoàn thành",
-  "r.join": "Tham gia ngay", "r.major": "Ngành học",
-  "r.sumEmail": "Email", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
+  "r.join": "Tham gia ngay", "r.major": "Ngành học", "r.sid": "MSSV", "r.eSid": "Nhập MSSV gồm 2 chữ cái và 6 chữ số, ví dụ SE123456.",
+  "r.sumEmail": "Email", "r.sumSid": "MSSV", "r.sumMajor": "Ngành", "r.sumTerm": "Học kỳ",
   "r.saving": "Đang lưu đăng ký…", "r.eSave": "Chưa lưu được đăng ký. Kiểm tra mạng rồi bấm gửi lại.",
   "r.eDup": "Email này đã đăng ký rồi. Cần sửa thông tin thì liên hệ ban tổ chức nhé.",
 });
 Object.assign(I18N.en, {
   "r.ctaT": "An IT student who's feeling stuck?", "r.ctaP": "Two weeks building a working web app with your team and an AI coding agent. Leave your details to save your spot.",
   "r.perk1": "6 hands-on steps", "r.perk2": "Ship software that really runs", "r.perk3": "Certificate on completion",
-  "r.join": "Join now", "r.major": "Major",
-  "r.sumEmail": "Email", "r.sumMajor": "Major", "r.sumTerm": "Term",
+  "r.join": "Join now", "r.major": "Major", "r.sid": "Student ID", "r.eSid": "Enter your student ID: 2 letters and 6 digits, e.g. SE123456.",
+  "r.sumEmail": "Email", "r.sumSid": "Student ID", "r.sumMajor": "Major", "r.sumTerm": "Term",
   "r.saving": "Saving your registration…", "r.eSave": "Couldn't save your registration. Check your connection and submit again.",
   "r.eDup": "This email is already registered. Contact the organisers if you need to change your details.",
 });
 
 // Khớp với firestore.rules: không khoảng trắng, không "/", có @ và dấu chấm sau @
 const EMAIL_RE = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;
+// MSSV FPT: 2 chữ cái + 6 chữ số (SE123456), khớp với firestore.rules
+const SID_RE = /^[A-Z]{2}[0-9]{6}$/;
 
 export function initRegistration() {
   const $ = id => document.getElementById(id);
   const cta = $("regCta"), form = $("regForm"), done = $("done");
   const foldPitch = $("foldPitch"), foldForm = $("foldForm"), foldDone = $("foldDone");
   const btn = $("submitBtn"), cPledge = $("c-pledge"), hint = $("submitHint"), gBtn = $("gBtn");
-  const emailInput = $("f-email"), nameInput = $("f-name"), majorSel = $("f-major"), termSel = $("f-term");
+  const emailInput = $("f-email"), nameInput = $("f-name"), sidInput = $("f-sid"), majorSel = $("f-major"), termSel = $("f-term");
   for (let i = 1; i <= 9; i++) { const o = document.createElement("option"); o.value = String(i); termSel.appendChild(o); }
   const labelTerms = () => [...termSel.options].slice(1).forEach(o => { o.textContent = t("f.termN") + o.value; });
   labelTerms(); addEventListener("langchange", labelTerms);
@@ -79,9 +81,11 @@ export function initRegistration() {
   // --- Kiểm tra từng ô; select đã được bọc bởi dropdown dùng chung: .value và .focus() vẫn đi qua select gốc ---
   const cleanEmail = () => emailInput.value.trim().toLowerCase();
   const cleanName = () => nameInput.value.replace(/\s+/g, " ").trim();
+  const cleanSid = () => sidInput.value.replace(/\s+/g, "").toUpperCase();
   const fields = {
     email: { el: emailInput, rule: () => { const v = cleanEmail(); return EMAIL_RE.test(v) && v.length <= 254 ? "" : "e.email"; } },
     name: { el: nameInput, rule: () => cleanName() ? "" : "e.name" },
+    sid: { el: sidInput, rule: () => SID_RE.test(cleanSid()) ? "" : "r.eSid" },
     major: { el: majorSel, rule: () => majorSel.value ? "" : "e.major" },
     term: { el: termSel, rule: () => termSel.value ? "" : "e.term" },
   };
@@ -91,8 +95,7 @@ export function initRegistration() {
     const er = $("e-" + k); er.textContent = key ? t(key) : ""; er.dataset.key = key; return !key;
   };
   const isBad = k => fields[k].el.closest(".field").classList.contains("bad");
-  [emailInput, nameInput].forEach(el => {
-    const k = el === emailInput ? "email" : "name";
+  [["email", emailInput], ["name", nameInput], ["sid", sidInput]].forEach(([k, el]) => {
     el.addEventListener("blur", () => { if (el.value.trim()) check(k); });
     el.addEventListener("input", () => { if (isBad(k)) check(k); });
   });
@@ -102,7 +105,7 @@ export function initRegistration() {
     const last = cleanName().split(" ").pop();
     $("doneTitle").textContent = t("d.title")(last);
     $("doneText").innerHTML = t("d.text")(esc(cleanEmail()), pick(COURSE.resultDate) ? esc(pick(COURSE.resultDate)) : "");
-    $("doneSum").innerHTML = [[t("r.sumMajor"), majorSel.selectedOptions[0]?.textContent || ""], [t("r.sumTerm"), t("f.termN") + termSel.value]]
+    $("doneSum").innerHTML = [[t("r.sumSid"), cleanSid()], [t("r.sumMajor"), majorSel.selectedOptions[0]?.textContent || ""], [t("r.sumTerm"), t("f.termN") + termSel.value]]
       .map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join("");
   };
   const setHintKey = key => { hint.dataset.key = key; hint.textContent = t(key); };
@@ -116,7 +119,7 @@ export function initRegistration() {
       saving = true; btn.disabled = true; setHintKey("r.saving");
       try {
         const { submitRegistration } = await fb();
-        await submitRegistration({ name: cleanName(), email: cleanEmail(), major: majorSel.value, term: termSel.value, lang: LANG });
+        await submitRegistration({ name: cleanName(), email: cleanEmail(), studentId: cleanSid(), major: majorSel.value, term: termSel.value, lang: LANG });
       } catch (x) {
         // Dữ liệu đã qua kiểm tra giống rules, nên bị từ chối nghĩa là email này đã có document (gửi lại thành update)
         console.error("submitRegistration", x);

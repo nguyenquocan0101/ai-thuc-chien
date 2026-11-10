@@ -31,14 +31,14 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 **Registration flow (`src/scripts/registration.js`).**
 - No sign-in. The `#regCta` block holds three stacked "folds": the pitch (perks + "Join now" `#gBtn`), the form `#regForm` and the success panel `#done`. Clicking `#gBtn` or any `a[href="#dang-ky"]` (header, hero) scrolls to the block, folds the pitch away and unfolds the form.
 - Folds animate `grid-template-rows` 1fr ↔ 0fr, so height follows the real content. A closed fold is `inert`; `.is-settled` drops `overflow: hidden` once a fold has finished opening so focus rings are not clipped. Reduced motion skips the transitions.
-- Fields: email, full name, major, term, the commitment checkbox. Email is trimmed and lowercased before validation and saving.
+- Fields: email, full name, student ID (MSSV), major, term, the commitment checkbox. Email is trimmed and lowercased; the student ID has spaces removed and is uppercased, then must match two letters and six digits (`SE123456`).
 - The Firebase SDK is a lazy chunk (`import("../lib/firebase.js")`) preloaded on idle.
 - With `firebaseConfig = null` in `src/lib/firebase-config.js`, submitting skips saving and shows a preview note. When testing with Playwright, intercept `**/src/lib/firebase-config.js*` and return `export const firebaseConfig = null;` instead of editing the file (dev server only; the build inlines the config).
 
 **Data layer (`src/lib/firebase.js`).** `submitRegistration` writes `registrations/{email}` (lowercased email as the doc id) with `setDoc` and `createdAt: serverTimestamp()`. The same email twice is an update, which the rules deny with `permission-denied`; the client shows that as "already registered". Google sign-in (`signInWithGoogle`, `onUserChange`) is only used by the admin page. `watchRegistrations` drives the admin table in realtime; the admin page adds search, a major filter and CSV export (BOM, formula-injection guard). Older documents at `registrations/{uid}` from the earlier Google sign-in flow carry `uid`, `studentId` and `updatedAt`.
 
 **Security lives in `firestore.rules`, not the client.**
-- Anyone may create `registrations/{id}` when `id == email`, the email is lowercase and shaped like an address, and the field set is exactly `name, email, major, term, pledge, lang, createdAt`. Only admins may read, list or delete.
+- Anyone may create `registrations/{id}` when `id == email`, the email is lowercase and shaped like an address, and the field set is exactly `name, email, major, term, pledge, lang, createdAt` plus an optional `studentId` matching `[A-Z]{2}[0-9]{6}` (optional only so pages opened before the field existed can still submit; the form always sends it). Only admins may read, list or delete.
 - Value rules: `major` is in `SE|AI|IA|IS|OTHER`, `term` is a string `"1"`–`"9"`, `pledge == true`, and `createdAt == request.time`.
 - Emails are not verified and the open create path can be scripted; App Check would be the next step if spam shows up.
 - The rules still accept the old signed-in `registrations/{uid}` writes so pages opened before the switch keep working; that path can be removed later.

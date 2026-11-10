@@ -218,6 +218,8 @@ footer .foot-harness { padding-block: clamp(48px, 7vw, 80px) 0 !important; displ
 .reg-cta input[type=text], .reg-cta input[type=email] { background: var(--t-field); font-family: var(--f-mono); }
 .reg-cta .sm { --sm-bg: var(--t-field); }
 .reg-cta .sm-btn { font-family: var(--f-mono); }
+#f-sid { text-transform: uppercase; }
+#f-sid::placeholder { text-transform: none; }
 .reg-form { gap: 14px; }
 .reg-form .field { gap: 6px; }
 .reg-form input[type=text], .reg-form input[type=email] { padding: 10px 13px; font-size: .95rem; border-radius: 8px; }

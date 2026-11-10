@@ -23,7 +23,9 @@ service cloud.firestore {
 
     function validOpenRegistration(id, d) {
       let fields = ['name', 'email', 'major', 'term', 'pledge', 'lang', 'createdAt'];
-      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+      // studentId là tuỳ chọn ở đây để trang đã mở trước khi thêm ô MSSV vẫn gửi được; form mới luôn gửi kèm
+      return d.keys().hasOnly(fields.concat(['studentId'])) && d.keys().hasAll(fields)
+        && (!('studentId' in d) || (d.studentId is string && d.studentId.matches('[A-Z]{2}[0-9]{6}')))
         && d.email is string && d.email.size() <= 254
         && d.email == d.email.lower()
         && d.email.matches('[^@ /]+@[^@ /]+[.][^@ /]+')

@@ -26,9 +26,9 @@ function render() {
   const list = filtered(), body = $("rows");
   body.replaceChildren(...list.map((r, i) => {
     const tr = document.createElement("tr");
-    [String(i + 1), r.name, r.email, majorName(r.major), r.term ? "Kỳ " + r.term : "—", fmtDate(r.createdAt)].forEach((v, k) => {
+    [String(i + 1), r.name, r.email, r.studentId, majorName(r.major), r.term ? "Kỳ " + r.term : "—", fmtDate(r.createdAt)].forEach((v, k) => {
       const td = document.createElement("td"); td.textContent = v || "—";
-      if (k === 0 || k === 4) td.className = "mono";
+      if (k === 0 || k === 3 || k === 5) td.className = "mono";
       tr.appendChild(td);
     });
     return tr;
