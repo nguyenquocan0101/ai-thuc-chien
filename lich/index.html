@@ -14,7 +14,7 @@
 <body>
 <header class="bar">
   <div class="bar-in">
-    <a class="brand" href="/">AI Thực Chiến <span>FA26 · Lịch học</span></a>
+    <a class="brand" href="/">AI Thực Chiến</a>
     <div class="who" id="who" hidden>
       <span id="whoMail"></span>
       <button class="btn btn-ghost btn-sm" type="button" id="signOutBtn">Đăng xuất</button>
@@ -54,21 +54,17 @@
   <section id="vMain" hidden>
     <div class="me">
       <p class="me-who"><b id="meName"></b> <span class="mono" id="meSid"></span></p>
-      <span class="status" id="statusPill"></span>
     </div>
     <h1 id="mainTitle"></h1>
-    <p class="muted lead" id="mainSub"></p>
+    <div class="muted lead" id="mainSub"></div>
 
     <div id="pickBox" hidden>
       <fieldset class="shift-pick" id="shiftPick">
         <legend class="sr-only">Chọn ca học</legend>
       </fieldset>
-      <div class="savebar" id="saveBar">
-        <div>
-          <p class="save-count" id="pickCount"></p>
-          <p class="muted save-hint" id="saveHint" aria-live="polite"></p>
-        </div>
-        <button class="btn btn-primary" type="button" id="saveBtn">Lưu lịch</button>
+      <div class="confirm-row" id="confirmRow">
+        <p class="save-line" id="saveHint" aria-live="polite"></p>
+        <button class="btn btn-primary" type="button" id="saveBtn">Xác nhận</button>
       </div>
     </div>
 
