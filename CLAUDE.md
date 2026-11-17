@@ -50,7 +50,7 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 - `schedule/config` holds `status` (`draft` → `open` → `closed` → `published`) plus `from`, `to` and `sessions`. Session ids look like `2026-11-23-am`; shift hours are constants in `src/lib/schedule.js`.
 - Students pick one shift, morning or afternoon, for the whole course (`/lich` states the course dates from the first and last session, then shows two radio cards; the choice is saved only when the student presses Xác nhận, and leaving with an unconfirmed change asks first); `availability/{email}.sessionIds` stores every session of that shift. Each class is one shift (at most one class per shift), edited as a row in the admin class table (`shiftOf` in `src/lib/schedule.js`). There is no arrangement step: a student's class is the class of the shift they picked, derived on the fly in `/lich` and the admin student table.
 - `availability/{email}` is writable by its owner only while the status is `open`; admins may write it any time (setting a student's shift from the Sinh viên tab).
-- The Sinh viên tab has full CRUD: add/edit in a form dialog (email is the doc id, so it is read-only when editing), delete through `confirmDialog`, which also removes the student's `availability`.
+- The Sinh viên tab has full CRUD: add/edit in a form dialog (email is the doc id, so it is read-only when editing), delete through `confirmDialog`, which also removes the student's `availability`. A term dropdown filters the table (options built from the data), and row checkboxes plus a "select all visible" header box drive a bulk delete bar.
 - `schedule/classes` becomes readable to students only when the status is `published`.
 - Zalo links pass through `safeUrl`, which accepts `https:` only.
 

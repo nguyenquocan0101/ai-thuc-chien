@@ -110,6 +110,11 @@ td.hit { background: var(--orange-soft); color: var(--orange-deep); font-weight:
 .cls-table td:nth-child(5) { min-width: 220px; }
 .cls-table .sm { min-width: 120px; }
 .cell-act { width: 1%; text-align: right; white-space: nowrap; }
+.cell-check { width: 1%; padding-right: 0; }
+.cell-check input { width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--orange); cursor: pointer; }
+tr.is-picked td { background: #FFF4EC; }
+.bulk-bar { position: sticky; top: 64px; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 10px; padding: 10px 14px; border: 1px solid var(--orange); border-radius: 14px; background: #FFF7F1; font-weight: 600; }
+.bulk-bar span { margin-right: auto; }
 /* Form trong hộp thoại */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
 .form-grid .span-2 { grid-column: 1 / -1; }

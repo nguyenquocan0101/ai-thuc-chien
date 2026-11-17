@@ -16,6 +16,7 @@ const DEFAULT_RANGE = { from: "2026-11-23", to: "2026-12-04" }; // tuần 12–1
 
 let ctx;                 // { majors, registrations: () => [] }
 let students = [];       // students/*
+const picked = new Set(); // email các sinh viên đang được tick để xoá nhiều
 let config = null;       // schedule/config (null = chưa có)
 let classes = [];        // schedule/classes.classes đã lưu
 let avail = new Map();   // email → sessionIds
@@ -62,12 +63,50 @@ export function startSchedule(context) {
 
 // ---------- Sinh viên ----------
 
+// Lựa chọn kỳ lấy từ dữ liệu: "Kỳ 3 (12)"; sinh viên chưa có kỳ gom vào "Chưa rõ kỳ"
+function renderTermFilter() {
+  const sel = $("stuTerm");
+  const count = new Map();
+  students.forEach(s => { const t = s.term || "none"; count.set(t, (count.get(t) || 0) + 1); });
+  const terms = [...count.keys()].filter(t => t !== "none").sort((a, b) => a - b);
+  if (count.has("none")) terms.push("none");
+  const opts = [["", "Tất cả kỳ"], ...terms.map(t => [t, `${t === "none" ? "Chưa rõ kỳ" : "Kỳ " + t} (${count.get(t)})`])];
+  if (opts.map(o => o.join()).join("|") === [...sel.options].map(o => [o.value, o.text].join()).join("|")) return;
+  const keep = sel.value;
+  sel.replaceChildren(...opts.map(([v, label]) => new Option(label, v)));
+  sel.value = opts.some(([v]) => v === keep) ? keep : "";
+}
+
+function visibleStudents() {
+  const q = fold($("stuQ").value), term = $("stuTerm").value;
+  return students.filter(s => (!term || (s.term || "none") === term) && (!q || fold([s.name, s.email, s.studentId].join(" ")).includes(q)));
+}
+
+function renderBulk(list) {
+  const n = picked.size;
+  $("stuBulk").hidden = n === 0;
+  $("stuBulkCount").textContent = `Đã chọn ${n} sinh viên`;
+  $("stuBulkDel").textContent = `Xoá ${n} sinh viên`;
+  const shown = list.filter(s => picked.has(s.id)).length;
+  $("stuAll").checked = list.length > 0 && shown === list.length;
+  $("stuAll").indeterminate = shown > 0 && shown < list.length;
+  $("stuAll").disabled = list.length === 0;
+}
+
 function renderStudents() {
-  const q = fold($("stuQ").value);
-  const list = students.filter(s => !q || fold([s.name, s.email, s.studentId].join(" ")).includes(q));
+  renderTermFilter();
+  [...picked].forEach(id => { if (!students.some(s => s.id === id)) picked.delete(id); });
+  const list = visibleStudents();
   $("stuRows").replaceChildren(...list.map((s, i) => {
     const tr = el("tr");
     const sh = shiftOfStudent(s.id);
+    const check = el("input");
+    check.type = "checkbox"; check.dataset.id = s.id; check.checked = picked.has(s.id);
+    check.setAttribute("aria-label", `Chọn ${s.name || s.email}`);
+    const checkCell = el("td", "cell-check");
+    checkCell.append(check);
+    tr.append(checkCell);
+    tr.classList.toggle("is-picked", check.checked);
     const cells = [
       [String(i + 1), "mono"], [s.name], [s.email], [s.studentId || "Thiếu", s.studentId ? "mono" : "mono miss"],
       [s.term ? "Kỳ " + s.term : "—", "mono"], [SHIFTS[sh]?.name || "Chưa chọn", sh ? "" : "miss"], [classOfStudent(s.id)?.name || "—"]
@@ -90,6 +129,7 @@ function renderStudents() {
   $("stuSummary").textContent = students.length
     ? `${students.length} sinh viên · ${withSid} có MSSV · ${n.am} sáng · ${n.pm} chiều · ${n.none} chưa chọn ca`
     : "Chưa có sinh viên nào. Nhập danh sách từ Google Sheet bên dưới.";
+  renderBulk(list);
   $("stuEmpty").hidden = list.length > 0;
   $("stuEmpty").textContent = students.length ? "Không có kết quả phù hợp." : "Chưa có sinh viên. Bấm Nhập từ Google Sheet.";
 }
@@ -283,6 +323,30 @@ async function deleteStudent(s) {
   const ops = [{ path: `students/${s.id}`, data: null }];
   if (avail.has(s.id)) ops.push({ path: `availability/${s.id}`, data: null });
   try { await writeDocuments(ops); showErr(null); } catch (err) { showErr(err); }
+}
+
+async function deletePicked() {
+  const list = students.filter(s => picked.has(s.id));
+  if (!list.length) return;
+  const names = list.slice(0, 5).map(s => s.name || s.email).join(", ") + (list.length > 5 ? ` và ${list.length - 5} người khác` : "");
+  const ok = await confirmDialog({
+    title: `Xoá ${list.length} sinh viên?`,
+    message: `${names} sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa. Ca đã chọn cũng bị xoá. Không hoàn tác được.`,
+    confirmLabel: `Xoá ${list.length} sinh viên`, danger: true
+  });
+  if (!ok) return;
+  const ops = list.flatMap(s => [{ path: `students/${s.id}`, data: null }, ...(avail.has(s.id) ? [{ path: `availability/${s.id}`, data: null }] : [])]);
+  $("stuBulkDel").disabled = true;
+  try {
+    await writeDocuments(ops);
+    picked.clear();
+    showErr(null);
+  } catch (err) {
+    showErr(err);
+  } finally {
+    $("stuBulkDel").disabled = false;
+    renderStudents();
+  }
 }
 
 // ---------- Trạng thái + buổi học ----------
@@ -518,6 +582,21 @@ function addClass() {
 // ---------- Sự kiện ----------
 
 $("stuQ").addEventListener("input", renderStudents);
+$("stuTerm").addEventListener("change", renderStudents);
+$("stuRows").addEventListener("change", e => {
+  const box = e.target.closest("input[type=checkbox][data-id]");
+  if (!box) return;
+  if (box.checked) picked.add(box.dataset.id); else picked.delete(box.dataset.id);
+  box.closest("tr").classList.toggle("is-picked", box.checked);
+  renderBulk(visibleStudents());
+});
+// Chọn tất cả: chỉ những sinh viên đang hiển thị theo tìm kiếm và bộ lọc kỳ
+$("stuAll").addEventListener("change", e => {
+  visibleStudents().forEach(s => { if (e.target.checked) picked.add(s.id); else picked.delete(s.id); });
+  renderStudents();
+});
+$("stuBulkClear").addEventListener("click", () => { picked.clear(); renderStudents(); });
+$("stuBulkDel").addEventListener("click", deletePicked);
 $("stuCsv").addEventListener("click", exportStudents);
 $("stuAdd").addEventListener("click", () => openStudentForm(null));
 $("stuForm").addEventListener("submit", saveStudentForm);

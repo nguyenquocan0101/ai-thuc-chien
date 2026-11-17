@@ -69,6 +69,7 @@
       <p class="muted" id="stuSummary" data-meta></p>
       <div class="tools" data-actions>
           <input type="search" id="stuQ" placeholder="Tìm tên, email, MSSV…" aria-label="Tìm sinh viên">
+          <select id="stuTerm" aria-label="Lọc theo kỳ"><option value="">Tất cả kỳ</option></select>
           <button class="btn btn-ghost" type="button" id="stuCsv">Xuất CSV</button>
           <button class="btn btn-ghost" type="button" id="importOpen">Nhập từ Google Sheet</button>
           <button class="btn btn-primary" type="button" id="stuAdd">Thêm sinh viên</button>
@@ -104,9 +105,14 @@
           </div>
         </form>
       </dialog>
+      <div class="bulk-bar" id="stuBulk" hidden>
+        <span id="stuBulkCount"></span>
+        <button class="btn btn-ghost btn-sm" type="button" id="stuBulkClear">Bỏ chọn</button>
+        <button class="btn btn-danger btn-sm" type="button" id="stuBulkDel">Xoá đã chọn</button>
+      </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Ca</th><th>Lớp</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
+          <thead><tr><th class="cell-check"><input type="checkbox" id="stuAll" aria-label="Chọn tất cả sinh viên đang hiển thị"></th><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Ca</th><th>Lớp</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
           <tbody id="stuRows"></tbody>
         </table>
         <p class="empty muted" id="stuEmpty" hidden></p>

@@ -68,7 +68,7 @@ Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: 
 
 Trang `/lich` dành cho sinh viên có trong danh sách. Trạng thái đăng ký lịch đổi bằng nút trên đầu mục **Buổi học** của `/admin`. Quy trình của ban tổ chức:
 
-1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; ai vẫn thiếu sẽ được hỏi khi đăng nhập. Thêm, sửa (cả ca học) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng.
+1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; ai vẫn thiếu sẽ được hỏi khi đăng nhập. Thêm, sửa (cả ca học) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng. Lọc theo kỳ bằng ô **Tất cả kỳ**; tick nhiều dòng (hoặc ô đầu bảng để chọn mọi dòng đang hiển thị) rồi bấm **Xoá N sinh viên** để xoá nhiều cùng lúc.
 2. **Buổi học:** chọn khoảng ngày rồi bỏ những buổi nghỉ. Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00.
 3. **Lớp:** mỗi ca một lớp (mặc định Lớp sáng và Lớp chiều), mỗi lớp một dòng trong bảng: tên, ca và link nhóm Zalo. Cột Sinh viên là số người chọn ca đó.
 4. Chuyển trạng thái **Mở đăng ký**, gửi link `/lich` cho sinh viên.
