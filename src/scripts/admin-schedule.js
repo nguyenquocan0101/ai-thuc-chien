@@ -5,6 +5,7 @@ import { watchCollection, watchDocument, saveDocument, writeDocuments } from "..
 import { STATUS, SHIFTS, SID_RE, cleanSid, parseSession, weekdaySessions, shiftOf, safeUrl } from "../lib/schedule.js";
 import { sessionGrid } from "../components/session-grid.js";
 import { createDropdown } from "../components/dropdown.js";
+import { confirmDialog, wireDialog } from "../components/dialog.js";
 import { downloadCsv } from "../lib/csv.js";
 
 const $ = id => document.getElementById(id);
@@ -72,6 +73,14 @@ function renderStudents() {
       [s.term ? "Kỳ " + s.term : "—", "mono"], [SHIFTS[sh]?.name || "Chưa chọn", sh ? "" : "miss"], [classOfStudent(s.id)?.name || "—"]
     ];
     cells.forEach(([v, cls]) => tr.append(el("td", cls || "", v || "—")));
+    const act = el("td", "cell-act");
+    [["edit", "Sửa"], ["del", "Xoá"]].forEach(([kind, label]) => {
+      const b = el("button", `btn btn-link ${kind}`, label);
+      b.type = "button"; b.dataset.act = kind; b.dataset.id = s.id;
+      b.setAttribute("aria-label", `${label} ${s.name || s.email}`);
+      act.append(b);
+    });
+    tr.append(act);
     return tr;
   }));
   ctx.setBadge?.("sinh-vien", students.length ? String(students.length) : "");
@@ -190,6 +199,90 @@ function renderImport() {
   actions.append(go);
   nodes.push(actions);
   box.replaceChildren(...nodes);
+}
+
+// ---------- Thêm / sửa / xoá sinh viên ----------
+
+let editing = null; // email đang sửa; null = thêm mới
+
+function openStudentForm(s) {
+  editing = s ? s.id : null;
+  const f = $("stuForm");
+  f.reset();
+  f.querySelectorAll("[aria-invalid]").forEach(i => i.removeAttribute("aria-invalid"));
+  $("stuFormTitle").textContent = s ? "Sửa sinh viên" : "Thêm sinh viên";
+  f.elements.email.value = s ? s.id : "";
+  f.elements.email.readOnly = !!s; // email là khoá của bản ghi, muốn đổi thì xoá rồi thêm lại
+  f.elements.name.value = s?.name || "";
+  f.elements.studentId.value = s?.studentId || "";
+  f.elements.term.value = s?.term || "";
+  $("stuMajor").value = s?.major || "";
+  $("stuShift").value = s ? shiftOfStudent(s.id) : "";
+  $("stuFormErr").textContent = "";
+  $("stuFormSave").disabled = false;
+  $("stuDialog").showModal();
+  (s ? f.elements.name : f.elements.email).focus();
+}
+
+function studentFormProblem(v) {
+  if (!EMAIL_RE.test(v.email)) return ["email", "Email chưa đúng định dạng."];
+  if (!editing && students.some(s => s.id === v.email)) return ["email", "Email này đã có trong danh sách."];
+  if (!v.name) return ["name", "Nhập họ tên."];
+  if (v.studentId && !SID_RE.test(v.studentId)) return ["studentId", "MSSV gồm 2 chữ cái và 6 chữ số, ví dụ SE123456."];
+  const owner = v.studentId && students.find(s => s.studentId === v.studentId && s.id !== v.email);
+  if (owner) return ["studentId", `MSSV này đang thuộc về ${owner.email}.`];
+  if (v.term && !/^[1-9]$/.test(v.term)) return ["term", "Kỳ là số từ 1 đến 9."];
+  if (v.shift && !ofShift(v.shift).length) return ["shift", "Chưa có buổi học nào của ca này. Lưu buổi học trước."];
+  return null;
+}
+
+async function saveStudentForm(e) {
+  e.preventDefault();
+  const f = $("stuForm");
+  const v = {
+    email: f.elements.email.value.trim().toLowerCase(),
+    name: f.elements.name.value.trim(),
+    studentId: cleanSid(f.elements.studentId.value),
+    term: f.elements.term.value.trim(),
+    major: $("stuMajor").value,
+    shift: $("stuShift").value
+  };
+  f.querySelectorAll("[aria-invalid]").forEach(i => i.removeAttribute("aria-invalid"));
+  const problem = studentFormProblem(v);
+  if (problem) {
+    const [field, msg] = problem;
+    $("stuFormErr").textContent = msg;
+    const input = f.elements[field];
+    if (input?.tagName === "INPUT") { input.setAttribute("aria-invalid", "true"); input.focus(); }
+    return;
+  }
+  const ops = [{ path: `students/${v.email}`, data: { name: v.name, email: v.email, studentId: v.studentId, major: v.major, term: v.term } }];
+  // Ca do admin đặt: ghi lịch của sinh viên thành mọi buổi của ca đó; "Chưa chọn" thì xoá
+  if (v.shift !== shiftOfStudent(v.email)) {
+    if (v.shift) ops.push({ path: `availability/${v.email}`, data: { sessionIds: ofShift(v.shift) } });
+    else if (avail.has(v.email)) ops.push({ path: `availability/${v.email}`, data: null });
+  }
+  $("stuFormSave").disabled = true;
+  try {
+    await writeDocuments(ops);
+    showErr(null);
+    $("stuDialog").close();
+  } catch (err) {
+    $("stuFormErr").textContent = err.code === "permission-denied" ? "Firestore từ chối thao tác. Kiểm tra rules đã deploy." : "Lỗi: " + (err.code || err.message);
+    $("stuFormSave").disabled = false;
+  }
+}
+
+async function deleteStudent(s) {
+  const ok = await confirmDialog({
+    title: "Xoá sinh viên?",
+    message: `${s.name || s.email} (${s.email}) sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa. Ca đã chọn cũng bị xoá.`,
+    confirmLabel: "Xoá", danger: true
+  });
+  if (!ok) return;
+  const ops = [{ path: `students/${s.id}`, data: null }];
+  if (avail.has(s.id)) ops.push({ path: `availability/${s.id}`, data: null });
+  try { await writeDocuments(ops); showErr(null); } catch (err) { showErr(err); }
 }
 
 // ---------- Trạng thái + buổi học ----------
@@ -426,10 +519,18 @@ function addClass() {
 
 $("stuQ").addEventListener("input", renderStudents);
 $("stuCsv").addEventListener("click", exportStudents);
+$("stuAdd").addEventListener("click", () => openStudentForm(null));
+$("stuForm").addEventListener("submit", saveStudentForm);
+$("stuForm").addEventListener("input", e => { e.target.removeAttribute("aria-invalid"); $("stuFormErr").textContent = ""; });
+wireDialog($("stuDialog"));
+$("stuRows").addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]");
+  const s = b && students.find(x => x.id === b.dataset.id);
+  if (!s) return;
+  if (b.dataset.act === "edit") openStudentForm(s); else deleteStudent(s);
+});
 $("importOpen").addEventListener("click", () => { $("importBox").showModal(); $("importText").focus(); });
-$("importClose").addEventListener("click", () => $("importBox").close());
-// Bấm ra ngoài khung (vùng nền mờ) cũng đóng
-$("importBox").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+wireDialog($("importBox"));
 $("importCheck").addEventListener("click", () => { importPlan = planImport($("importText").value); renderImport(); });
 $("importText").addEventListener("input", () => { if (importPlan) { importPlan = null; renderImport(); } });
 $("dFrom").addEventListener("change", onRange);

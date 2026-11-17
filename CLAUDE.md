@@ -34,6 +34,7 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 **Components (`src/components/`).** Reusable UI, each a `.js` + `.css` pair; pages import the CSS from their stylesheet (`index.css`, `admin.css`; `/lich` reuses `admin.css`). New reusable UI goes here, not in `src/lib` (pure logic) or `src/scripts` (page wiring).
 - `sidebar.js`: `createSidebar({ items: [{ id, label, panel, icon }], label })` shows one panel at a time, keeps the current item in `#id`, and exposes `setBadge(id, text)` and `select(id)`. Vertical on desktop, a sticky horizontal strip under 900px. Place it and the panels inside `.sb-layout`.
 - `session-grid.js`: `sessionGrid({ ids, selected, onChange, readOnly, counts, total })`, the day × shift grid (student picker, admin session/class editors, availability heatmap).
+- `dialog.js` + `dialog.css`: the `.modal` frame for every `<dialog>`, `confirmDialog({ title, message, confirmLabel, danger })` (returns a Promise<boolean>, replaces `confirm()`), and `wireDialog(dlg)` to close on `[data-close]` or a backdrop click.
 - `page-header.js`: `createPageHeader({ crumbs, title, meta, actions })`; moves the existing `meta`/`actions` elements in, so their ids and listeners keep working.
 - `dropdown.js`: see below.
 
@@ -48,7 +49,8 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 - A student may fill `studentId` only while it is empty.
 - `schedule/config` holds `status` (`draft` → `open` → `closed` → `published`) plus `from`, `to` and `sessions`. Session ids look like `2026-11-23-am`; shift hours are constants in `src/lib/schedule.js`.
 - Students pick one shift, morning or afternoon, for the whole course (`/lich` shows two radio cards); `availability/{email}.sessionIds` stores every session of that shift. Each class is one shift (at most one class per shift), edited as a row in the admin class table (`shiftOf` in `src/lib/schedule.js`). There is no arrangement step: a student's class is the class of the shift they picked, derived on the fly in `/lich` and the admin student table.
-- `availability/{email}` is writable by its owner only while the status is `open`.
+- `availability/{email}` is writable by its owner only while the status is `open`; admins may write it any time (setting a student's shift from the Sinh viên tab).
+- The Sinh viên tab has full CRUD: add/edit in a form dialog (email is the doc id, so it is read-only when editing), delete through `confirmDialog`, which also removes the student's `availability`.
 - `schedule/classes` becomes readable to students only when the status is `published`.
 - Zalo links pass through `safeUrl`, which accepts `https:` only.
 

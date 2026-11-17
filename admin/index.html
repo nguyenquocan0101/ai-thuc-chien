@@ -70,21 +70,43 @@
       <div class="tools" data-actions>
           <input type="search" id="stuQ" placeholder="Tìm tên, email, MSSV…" aria-label="Tìm sinh viên">
           <button class="btn btn-ghost" type="button" id="stuCsv">Xuất CSV</button>
-          <button class="btn btn-primary" type="button" id="importOpen">Nhập từ Google Sheet</button>
+          <button class="btn btn-ghost" type="button" id="importOpen">Nhập từ Google Sheet</button>
+          <button class="btn btn-primary" type="button" id="stuAdd">Thêm sinh viên</button>
         </div>
       <dialog class="modal" id="importBox" aria-labelledby="importTitle">
         <div class="modal-head">
           <h2 id="importTitle">Nhập danh sách từ Google Sheet</h2>
-          <button class="btn btn-ghost btn-sm" type="button" id="importClose" aria-label="Đóng">Đóng</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-close>Đóng</button>
         </div>
         <p class="muted">Copy cả bảng trong Sheet (gồm dòng tiêu đề, cần cột Email) rồi dán vào đây.</p>
         <textarea id="importText" rows="7" spellcheck="false" aria-label="Dữ liệu dán từ Sheet"></textarea>
         <div class="actions"><button class="btn btn-ghost" type="button" id="importCheck">Xem trước</button></div>
         <div id="importResult"></div>
       </dialog>
+      <dialog class="modal modal-sm" id="stuDialog" aria-labelledby="stuFormTitle">
+        <form id="stuForm" novalidate>
+          <div class="modal-head">
+            <h2 id="stuFormTitle">Thêm sinh viên</h2>
+            <button class="btn btn-ghost btn-sm" type="button" data-close>Đóng</button>
+          </div>
+          <div class="form-grid">
+            <label class="fld span-2">Email <input name="email" type="email" autocomplete="off" spellcheck="false" maxlength="120"></label>
+            <label class="fld span-2">Họ tên <input name="name" autocomplete="off" maxlength="80"></label>
+            <label class="fld">MSSV <input name="studentId" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="SE123456"></label>
+            <label class="fld">Kỳ <input name="term" type="number" min="1" max="9" inputmode="numeric"></label>
+            <label class="fld">Ngành <select name="major" id="stuMajor"><option value="">Chưa rõ</option></select></label>
+            <label class="fld">Ca học <select name="shift" id="stuShift"><option value="">Chưa chọn</option><option value="am">Sáng</option><option value="pm">Chiều</option></select></label>
+          </div>
+          <p class="err" id="stuFormErr" role="alert"></p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" type="button" data-close>Huỷ</button>
+            <button class="btn btn-primary" type="submit" id="stuFormSave">Lưu</button>
+          </div>
+        </form>
+      </dialog>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Ca</th><th>Lớp</th></tr></thead>
+          <thead><tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Ca</th><th>Lớp</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
           <tbody id="stuRows"></tbody>
         </table>
         <p class="empty muted" id="stuEmpty" hidden></p>

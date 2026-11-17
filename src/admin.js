@@ -17,7 +17,7 @@ const toDate = ts => (ts && typeof ts.toDate === "function" ? ts.toDate() : null
 const fmtDate = ts => { const d = toDate(ts); return d ? d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" }) : "—"; };
 const majorName = code => MAJORS[code] || code || "—";
 
-Object.entries(MAJORS).forEach(([code, name]) => { const o = document.createElement("option"); o.value = code; o.textContent = name; $("fMajor").appendChild(o); });
+Object.entries(MAJORS).forEach(([code, name]) => ["fMajor", "stuMajor"].forEach(id => $(id).append(new Option(name, code))));
 enhanceSelects();
 
 // Icon nét 24×24 cho từng mục của sidebar

@@ -1,0 +1,12 @@
+/* Hộp thoại <dialog class="modal"> (src/components/dialog.js và các dialog viết sẵn trong trang) */
+.modal {
+  width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto;
+  padding: 22px; border: 1px solid var(--line, #ECE4DC); border-radius: 20px; background: var(--card, #fff); color: var(--ink, #17141F);
+  box-shadow: 0 24px 60px rgba(23, 20, 31, .18);
+}
+.modal-sm { width: min(480px, calc(100vw - 32px)); }
+.modal::backdrop { background: rgba(23, 20, 31, .38); backdrop-filter: blur(2px); }
+.modal h2 { margin: 0; font-size: 1.15rem; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.modal-msg { margin: 8px 0 0; color: var(--muted, #6A6274); }
+.modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }

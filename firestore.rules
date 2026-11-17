@@ -104,13 +104,14 @@ service cloud.firestore {
     match /availability/{email} {
       allow get: if isAdmin() || (signedIn() && myEmail() == email);
       allow list, delete: if isAdmin();
-      allow create, update: if isListed() && myEmail() == email
+      // Admin đặt ca thay sinh viên (mục Sinh viên trên /admin); sinh viên chỉ tự ghi khi đăng ký đang mở
+      allow create, update: if isAdmin() || (isListed() && myEmail() == email
         && scheduleStatus() == 'open'
         && request.resource.data.keys().hasOnly(['sessionIds', 'updatedAt'])
         && request.resource.data.keys().hasAll(['sessionIds', 'updatedAt'])
         && request.resource.data.sessionIds is list
         && request.resource.data.sessionIds.size() <= 60
-        && request.resource.data.updatedAt == request.time;
+        && request.resource.data.updatedAt == request.time);
     }
   }
 }
