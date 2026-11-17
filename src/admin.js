@@ -5,9 +5,9 @@ import { createSidebar } from "./components/sidebar.js";
 import { createPageHeader } from "./components/page-header.js";
 import { downloadCsv } from "./lib/csv.js";
 import { startSchedule } from "./scripts/admin-schedule.js";
+import { MAJORS } from "./lib/majors.js";
 
 const $ = id => document.getElementById(id);
-const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Ngành khác" };
 const views = ["vLoading", "vLogin", "vDenied", "vList"];
 const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 

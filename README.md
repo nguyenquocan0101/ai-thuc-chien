@@ -68,12 +68,12 @@ Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: 
 
 Trang `/lich` dành cho sinh viên có trong danh sách. Trạng thái đăng ký lịch đổi bằng nút trên đầu mục **Buổi học** của `/admin`. Quy trình của ban tổ chức:
 
-1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; ai vẫn thiếu sẽ được hỏi khi đăng nhập. Thêm, sửa (cả ca học) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng. Lọc theo kỳ bằng ô **Tất cả kỳ**; tick nhiều dòng (hoặc ô đầu bảng để chọn mọi dòng đang hiển thị) rồi bấm **Xoá N sinh viên** để xoá nhiều cùng lúc.
+1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; sinh viên tự kiểm tra và bổ sung khi đăng nhập. Thêm, sửa (cả ca học) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng. Lọc theo kỳ bằng ô **Tất cả kỳ**; tick nhiều dòng (hoặc ô đầu bảng để chọn mọi dòng đang hiển thị) rồi bấm **Xoá N sinh viên** để xoá nhiều cùng lúc. Nút **Xuất Excel** tải một file gồm các trang Tổng quan, Sinh viên, Điểm danh (mỗi ngày học một cột), Buổi học, Lớp, Đơn đăng ký.
 2. **Buổi học:** chọn khoảng ngày rồi bỏ những buổi nghỉ. Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00.
 3. **Lớp:** mỗi ca một lớp (mặc định Lớp sáng và Lớp chiều), mỗi lớp một dòng trong bảng: tên, ca và link nhóm Zalo. Cột Sinh viên là số người chọn ca đó.
 4. Chuyển trạng thái **Mở đăng ký**, gửi link `/lich` cho sinh viên.
    - Sinh viên đăng nhập Google đúng email đã đăng ký.
-   - Ai thiếu MSSV phải bổ sung trước.
+   - Lần đầu vào, sinh viên kiểm tra lại họ tên, MSSV, ngành, kỳ, sửa nếu sai rồi bấm Lưu thông tin (sửa lại được bằng nút Sửa thông tin).
    - Sinh viên chọn học ca sáng hoặc ca chiều cho cả đợt, đổi được tới khi đóng.
 5. Chuyển **Đóng đăng ký** khi hết hạn. Mục **Sinh viên** cho biết ai học ca nào, ai chưa chọn.
 6. Chuyển **Công bố lớp**. Không cần xếp lớp: sinh viên vào lớp của ca đã chọn và thấy các buổi học cùng link Zalo của lớp. Ai chưa chọn ca thì không có lớp.

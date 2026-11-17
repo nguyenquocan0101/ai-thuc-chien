@@ -47,14 +47,16 @@ export async function readDocument(path) {
 export const saveDocument = (path, data) => setDoc(doc(db, path), { ...data, updatedAt: serverTimestamp() });
 
 // Sinh viên chỉ được sửa đúng trường studentId, và chỉ khi đang trống (xem firestore.rules)
-export const fillStudentId = (email, studentId) => updateDoc(doc(db, "students", email), { studentId });
+// Sinh viên tự kiểm tra và sửa thông tin của mình; infoConfirmedAt đánh dấu đã kiểm tra
+export const updateStudentInfo = (email, info) => updateDoc(doc(db, "students", email), { ...info, infoConfirmedAt: serverTimestamp() });
 
 // ops: [{ path, data }], data = null là xoá. Chia lô vì một batch tối đa 500 thao tác.
 export async function writeDocuments(ops) {
   for (let i = 0; i < ops.length; i += 400) {
     const batch = writeBatch(db);
     ops.slice(i, i + 400).forEach(({ path, data }) => {
-      if (data) batch.set(doc(db, path), { ...data, updatedAt: serverTimestamp() });
+      // merge: giữ các trường admin không gửi lên, vd. infoConfirmedAt của sinh viên
+      if (data) batch.set(doc(db, path), { ...data, updatedAt: serverTimestamp() }, { merge: true });
       else batch.delete(doc(db, path));
     });
     await batch.commit();

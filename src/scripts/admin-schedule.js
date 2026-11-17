@@ -7,6 +7,7 @@ import { sessionGrid } from "../components/session-grid.js";
 import { createDropdown } from "../components/dropdown.js";
 import { confirmDialog, wireDialog } from "../components/dialog.js";
 import { downloadCsv } from "../lib/csv.js";
+import { downloadXlsx } from "../lib/xlsx.js";
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -20,6 +21,7 @@ const picked = new Set(); // email các sinh viên đang được tick để xo�
 let config = null;       // schedule/config (null = chưa có)
 let classes = [];        // schedule/classes.classes đã lưu
 let avail = new Map();   // email → sessionIds
+let availAt = new Map(); // email → lúc sinh viên lưu ca (Timestamp)
 let loaded = new Set();  // các nguồn đã tải xong lần đầu
 let sessDraft = null;    // { from, to, off: Set } đang sửa
 let classDraft = null;   // [{ id, name, shift, zalo }] đang sửa; buổi của lớp = mọi buổi của ca đó
@@ -56,7 +58,7 @@ export function startSchedule(context) {
     watchCollection("students", rows => { students = rows.sort(byName); done("students"); renderStudents(); renderClasses(false); }, showErr),
     watchDocument("schedule/config", c => { config = c; done("config"); onConfig(); }, showErr),
     watchDocument("schedule/classes", c => { classes = c?.classes || []; done("classes"); onClasses(); }, showErr),
-    watchCollection("availability", rows => { avail = new Map(rows.map(r => [r.id, r.sessionIds || []])); done("avail"); renderStudents(); classStats(); }, showErr)
+    watchCollection("availability", rows => { avail = new Map(rows.map(r => [r.id, r.sessionIds || []])); availAt = new Map(rows.map(r => [r.id, r.updatedAt])); done("avail"); renderStudents(); classStats(); }, showErr)
   ];
   return () => stops.forEach(stop => stop());
 }
@@ -132,6 +134,78 @@ function renderStudents() {
   renderBulk(list);
   $("stuEmpty").hidden = list.length > 0;
   $("stuEmpty").textContent = students.length ? "Không có kết quả phù hợp." : "Chưa có sinh viên. Bấm Nhập từ Google Sheet.";
+}
+
+// Giờ Việt Nam, dạng "17/11/2026 14:05"; rỗng nếu chưa có
+const fmtTs = ts => {
+  const d = ts?.toDate?.();
+  return d ? d.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) : "";
+};
+const DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+const dayCol = iso => { const [y, m, d] = iso.split("-").map(Number); return `${DOW[new Date(y, m - 1, d).getDay()]} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`; };
+
+// Một file Excel gồm mọi dữ liệu trên Firestore mà trang quản trị đang xem, mỗi loại một trang tính
+function exportWorkbook() {
+  const ids = sessions();
+  const days = [...new Set(ids.map(id => parseSession(id).date))].sort();
+  const n = shiftCounts();
+  const regs = ctx.registrations();
+  const st = config?.status || "draft";
+  const major = code => ctx.majors[code] || code || "";
+  // Theo lớp rồi theo tên; ai chưa có lớp xếp cuối
+  const clsName = s => classOfStudent(s.id)?.name || "";
+  const sorted = [...students].sort((a, b) => (!clsName(a) - !clsName(b)) || clsName(a).localeCompare(clsName(b), "vi") || byName(a, b));
+
+  const overview = [
+    ["Mục", "Giá trị"],
+    ["Trạng thái đăng ký lịch", STATUS[st] || st],
+    ["Thời gian học", days.length ? `${dayCol(days[0])} – ${dayCol(days[days.length - 1])}/${days[days.length - 1].slice(0, 4)}` : ""],
+    ["Số ngày học", days.length],
+    ["Số buổi (tính cả hai ca)", ids.length],
+    ["Số lớp", classes.length],
+    ["Sinh viên trong danh sách", students.length],
+    ["Có MSSV", students.filter(s => s.studentId).length],
+    ["Chọn ca sáng", n.am],
+    ["Chọn ca chiều", n.pm],
+    ["Chưa chọn ca", n.none],
+    ["Đơn đăng ký", regs.length],
+    ["Xuất lúc", new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour12: false })]
+  ];
+
+  const studentRows = [["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Ca", "Giờ học", "Lớp", "Nhóm Zalo", "Số buổi", "Chọn ca lúc"],
+    ...sorted.map((s, i) => {
+      const sh = shiftOfStudent(s.id), cls = classOfStudent(s.id);
+      return [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), s.term ? Number(s.term) : "",
+        SHIFTS[sh]?.name || "Chưa chọn", SHIFTS[sh]?.time || "", cls?.name || "", safeUrl(cls?.zalo) || "", sh ? ofShift(sh).length : "", fmtTs(availAt.get(s.id))];
+    })];
+
+  // Bảng điểm danh: mỗi sinh viên một dòng, mỗi ngày học một cột để đánh dấu có mặt
+  const attendance = [["STT", "Họ tên", "MSSV", "Email", "Lớp", "Ca", ...days.map(dayCol), "Số buổi có mặt"],
+    ...sorted.filter(s => shiftOfStudent(s.id)).map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id,
+      classOfStudent(s.id)?.name || "", SHIFTS[shiftOfStudent(s.id)]?.name || "", ...days.map(() => ""), ""])];
+
+  const sessionRows = [["STT", "Ngày", "Thứ", "Ca", "Giờ", "Lớp", "Số sinh viên"],
+    ...ids.map((id, i) => {
+      const { date, shift } = parseSession(id);
+      const cls = classes.find(c => classShift(c) === shift);
+      return [i + 1, `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`, dayCol(date).split(" ")[0], SHIFTS[shift]?.name || shift, SHIFTS[shift]?.time || "", cls?.name || "", n[shift] ?? ""];
+    })];
+
+  const classRows = [["Lớp", "Ca", "Giờ học", "Số buổi", "Số sinh viên", "Nhóm Zalo"],
+    ...classes.map(c => { const sh = classShift(c); return [c.name || "", SHIFTS[sh]?.name || "", SHIFTS[sh]?.time || "", sh ? ofShift(sh).length : 0, sh ? n[sh] : 0, safeUrl(c.zalo) || ""]; })];
+
+  const regRows = [["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Ngôn ngữ", "Đăng ký lúc", "Có trong danh sách lịch"],
+    ...regs.map((r, i) => [i + 1, r.name || "", r.email || "", r.studentId || "", major(r.major), r.term ? Number(r.term) : "", r.lang || "", fmtTs(r.createdAt),
+      students.some(s => s.id === String(r.email || "").toLowerCase()) ? "Có" : "Không"])];
+
+  downloadXlsx("ai-thuc-chien-fa26", [
+    { name: "Tổng quan", rows: overview, widths: [28, 34] },
+    { name: "Sinh viên", rows: studentRows, widths: [6, 26, 32, 12, 22, 6, 10, 14, 14, 30, 9, 18] },
+    { name: "Điểm danh", rows: attendance, widths: [6, 26, 12, 32, 14, 8, ...days.map(() => 10), 14] },
+    { name: "Buổi học", rows: sessionRows, widths: [6, 12, 6, 8, 14, 14, 13] },
+    { name: "Lớp", rows: classRows, widths: [16, 8, 14, 9, 13, 34] },
+    { name: "Đơn đăng ký", rows: regRows, widths: [6, 26, 32, 12, 22, 6, 9, 18, 20] }
+  ]);
 }
 
 function exportStudents() {
@@ -598,6 +672,7 @@ $("stuAll").addEventListener("change", e => {
 $("stuBulkClear").addEventListener("click", () => { picked.clear(); renderStudents(); });
 $("stuBulkDel").addEventListener("click", deletePicked);
 $("stuCsv").addEventListener("click", exportStudents);
+$("stuXlsx").addEventListener("click", exportWorkbook);
 $("stuAdd").addEventListener("click", () => openStudentForm(null));
 $("stuForm").addEventListener("submit", saveStudentForm);
 $("stuForm").addEventListener("input", e => { e.target.removeAttribute("aria-invalid"); $("stuFormErr").textContent = ""; });

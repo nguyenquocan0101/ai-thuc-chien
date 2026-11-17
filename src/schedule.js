@@ -1,6 +1,8 @@
 // Trang /lich: sinh viên trong danh sách đăng nhập Google, bổ sung MSSV nếu thiếu, chọn học ca sáng hoặc ca chiều,
 // rồi xem lớp của ca đó khi ban tổ chức công bố. Quyền đọc/ghi do firestore.rules kiểm soát.
-import { signInWithGoogle, signOutUser, onUserChange, readDocument, watchDocument, saveDocument, fillStudentId } from "./lib/firebase.js";
+import { signInWithGoogle, signOutUser, onUserChange, readDocument, watchDocument, saveDocument, updateStudentInfo } from "./lib/firebase.js";
+import { MAJORS } from "./lib/majors.js";
+import { enhanceSelects } from "./components/dropdown.js";
 import { STATUS, SHIFTS, SID_RE, cleanSid, parseSession, sessionLabel, shiftOf as shiftOfIds, safeUrl } from "./lib/schedule.js";
 
 const $ = id => document.getElementById(id);
@@ -53,8 +55,9 @@ onUserChange(async user => {
     const stu = await readDocument(`students/${email}`);
     if (my !== gen) return;
     if (!stu) { $("missingMail").textContent = user.email; showView("vMissing"); return; }
-    me = { email, name: stu.name || user.displayName || email, studentId: stu.studentId || "" };
-    if (me.studentId) await enterMain(my); else askSid();
+    me = { email, name: stu.name || user.displayName || "", studentId: stu.studentId || "", major: stu.major || "", term: stu.term || "" };
+    // Lần đầu vào: kiểm tra lại thông tin đăng ký trước khi chọn ca
+    if (stu.infoConfirmedAt && me.studentId) await enterMain(my); else askInfo(false);
   } catch (e) {
     if (my !== gen) return;
     showView("vLogin");
@@ -62,29 +65,51 @@ onUserChange(async user => {
   }
 });
 
-function askSid() {
-  $("sidName").textContent = me.name;
+// Ngành và kỳ: lựa chọn cố định, kỳ 1–9 như form đăng ký
+Object.entries(MAJORS).forEach(([code, name]) => $("infoMajor").append(new Option(name, code)));
+for (let t = 1; t <= 9; t++) $("infoTerm").append(new Option("Kỳ " + t, String(t)));
+enhanceSelects($("vSid"));
+
+function askInfo(canGoBack) {
+  $("infoEmail").value = me.email;
+  $("infoName").value = me.name;
+  $("sidInput").value = me.studentId;
+  $("infoMajor").value = MAJORS[me.major] ? me.major : "";
+  $("infoTerm").value = /^[1-9]$/.test(me.term) ? me.term : "";
+  $("infoBack").hidden = !canGoBack;
   $("sidErr").textContent = "";
+  $("sidForm").querySelectorAll("[aria-invalid]").forEach(x => x.removeAttribute("aria-invalid"));
   showView("vSid");
-  $("sidInput").focus();
+  $("infoName").focus();
+}
+
+function infoProblem(v) {
+  if (!v.name) return ["infoName", "Nhập họ tên."];
+  if (!SID_RE.test(v.studentId)) return ["sidInput", "MSSV gồm 2 chữ cái và 6 chữ số, ví dụ SE123456."];
+  if (!MAJORS[v.major]) return ["infoMajor", "Chọn ngành."];
+  if (!/^[1-9]$/.test(v.term)) return ["infoTerm", "Chọn kỳ."];
+  return null;
 }
 
 $("sidForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const sid = cleanSid($("sidInput").value);
-  if (!SID_RE.test(sid)) {
-    $("sidErr").textContent = "MSSV gồm 2 chữ cái và 6 chữ số, ví dụ SE123456.";
-    $("sidInput").setAttribute("aria-invalid", "true");
-    $("sidInput").focus();
+  const v = { name: $("infoName").value.trim().replace(/\s+/g, " "), studentId: cleanSid($("sidInput").value), major: $("infoMajor").value, term: $("infoTerm").value };
+  const problem = infoProblem(v);
+  $("sidForm").querySelectorAll("[aria-invalid]").forEach(x => x.removeAttribute("aria-invalid"));
+  if (problem) {
+    const [id, msg] = problem;
+    $("sidErr").textContent = msg;
+    $(id).setAttribute("aria-invalid", "true");
+    $(id).focus();
     return;
   }
-  $("sidInput").removeAttribute("aria-invalid");
   $("sidBtn").disabled = true;
   const my = gen;
   try {
-    await fillStudentId(me.email, sid);
+    await updateStudentInfo(me.email, v);
     if (my !== gen) return;
-    me.studentId = sid;
+    Object.assign(me, v);
+    if (stopConfig) { stopConfig(); stopConfig = null; }
     await enterMain(my);
   } catch (err) {
     fail(err, "sidErr");
@@ -92,6 +117,8 @@ $("sidForm").addEventListener("submit", async e => {
     $("sidBtn").disabled = false;
   }
 });
+$("infoBack").addEventListener("click", () => showView("vMain"));
+$("infoEdit").addEventListener("click", () => askInfo(true));
 
 async function enterMain(my) {
   const av = await readDocument(`availability/${me.email}`);
@@ -248,4 +275,4 @@ $("saveBtn").addEventListener("click", saveShift);
 window.addEventListener("beforeunload", e => { if (config?.status === "open" && isDirty()) e.preventDefault(); });
 $("switchBtn").addEventListener("click", () => signInWithGoogle().catch(e => console.warn(e.code || e)));
 $("signOutBtn").addEventListener("click", () => signOutUser());
-$("sidInput").addEventListener("input", () => { $("sidErr").textContent = ""; $("sidInput").removeAttribute("aria-invalid"); });
+$("sidForm").addEventListener("input", e => { $("sidErr").textContent = ""; e.target.removeAttribute("aria-invalid"); });

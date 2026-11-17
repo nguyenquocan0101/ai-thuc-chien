@@ -1,11 +1,16 @@
 /* Trang /lich (dùng chung token, thanh trên cùng, nút và card của admin.css) */
 .wrap.narrow { max-width: 860px; padding-bottom: 32px; }
 
-.sid-form { display: grid; gap: 8px; width: 100%; max-width: 300px; text-align: left; }
-.sid-form label { font-weight: 600; font-size: .9rem; }
-.sid-form input { font: 500 1.05rem var(--f-mono); letter-spacing: .04em; text-transform: uppercase; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
-.sid-form input[aria-invalid="true"] { border-color: var(--err); }
-.sid-form .err { margin: 0; min-height: 1.2em; font-size: .88rem; }
+/* Kiểm tra thông tin: ô nhập dùng .fld của admin.css */
+.info-form { display: grid; gap: 12px; width: 100%; max-width: 380px; text-align: left; }
+.info-form .fld { font-size: .88rem; }
+.info-form .fld input { font-size: 1rem; padding: 11px 12px; }
+.info-form .fld .sm { --sm-pad: 11px 38px 11px 12px; font-size: 1rem; }
+.info-form .mono-in { font-family: var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
+.info-row { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
+.info-form .err { margin: 0; min-height: 1.2em; font-size: .88rem; }
+.info-actions { display: flex; gap: 10px; }
+.info-actions .btn { flex: 1; }
 
 .me { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 14px; }
 .me-who { margin: 0; }

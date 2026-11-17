@@ -41,19 +41,28 @@
   </section>
 
   <section class="card center" id="vSid" hidden>
-    <h1>Bổ sung MSSV</h1>
-    <p class="muted">Chào <b id="sidName"></b>. Đơn đăng ký của bạn chưa có MSSV. Nhập MSSV để tiếp tục chọn lịch học.</p>
-    <form class="sid-form" id="sidForm" novalidate>
-      <label for="sidInput">MSSV</label>
-      <input id="sidInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="SE123456" aria-describedby="sidErr">
+    <h1>Kiểm tra thông tin</h1>
+    <p class="muted">Xem lại thông tin bạn đã đăng ký, sửa nếu chưa đúng rồi bấm Lưu.</p>
+    <form class="info-form" id="sidForm" novalidate>
+      <label class="fld">Email <input id="infoEmail" type="email" readonly tabindex="-1"></label>
+      <label class="fld">Họ tên <input id="infoName" type="text" autocomplete="name" maxlength="80"></label>
+      <label class="fld">MSSV <input id="sidInput" class="mono-in" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="SE123456"></label>
+      <div class="info-row">
+        <label class="fld">Ngành <select id="infoMajor" data-placeholder><option value="">Chọn ngành</option></select></label>
+        <label class="fld">Kỳ <select id="infoTerm" data-placeholder><option value="">Chọn kỳ</option></select></label>
+      </div>
       <p class="err" id="sidErr" role="alert"></p>
-      <button class="btn btn-primary" type="submit" id="sidBtn">Lưu và tiếp tục</button>
+      <div class="info-actions">
+        <button class="btn btn-ghost" type="button" id="infoBack" hidden>Quay lại</button>
+        <button class="btn btn-primary" type="submit" id="sidBtn">Lưu thông tin</button>
+      </div>
     </form>
   </section>
 
   <section id="vMain" hidden>
     <div class="me">
       <p class="me-who"><b id="meName"></b> <span class="mono" id="meSid"></span></p>
+      <button class="btn btn-ghost btn-sm" type="button" id="infoEdit">Sửa thông tin</button>
     </div>
     <h1 id="mainTitle"></h1>
     <div class="muted lead" id="mainSub"></div>

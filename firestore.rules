@@ -34,6 +34,14 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/students/$(myEmail()));
     }
 
+    function changedOk(d, keys) {
+      return (!('name' in keys) || (d.name is string && d.name.size() > 0 && d.name.size() <= 80))
+        && (!('studentId' in keys) || (d.studentId is string && d.studentId.matches('[A-Z]{2}[0-9]{6}')))
+        && (!('major' in keys) || d.major in ['SE', 'AI', 'IA', 'IS', 'OTHER'])
+        && (!('term' in keys) || (d.term is string && d.term.matches('[1-9]')))
+        && (!('infoConfirmedAt' in keys) || d.infoConfirmedAt == request.time);
+    }
+
     function scheduleStatus() {
       return get(/databases/$(database)/documents/schedule/config).data.status;
     }
@@ -87,11 +95,11 @@ service cloud.firestore {
     match /students/{email} {
       allow get: if isAdmin() || (signedIn() && myEmail() == email);
       allow list, create, delete: if isAdmin();
+      // Sinh viên tự kiểm tra và sửa thông tin của mình (trang /lich, bước Kiểm tra thông tin).
+      // Chỉ kiểm tra trường nào thực sự đổi, để dữ liệu cũ (vd. ngành trống) không chặn việc sửa trường khác.
       allow update: if isAdmin() || (signedIn() && myEmail() == email
-        && resource.data.studentId == ''
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentId'])
-        && request.resource.data.studentId is string
-        && request.resource.data.studentId.matches('[A-Z]{2}[0-9]{6}'));
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'studentId', 'major', 'term', 'infoConfirmedAt'])
+        && changedOk(request.resource.data, request.resource.data.diff(resource.data).affectedKeys()));
     }
 
     match /schedule/{docId} {
