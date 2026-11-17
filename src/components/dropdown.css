@@ -1,4 +1,4 @@
-/* Dropdown dùng chung cho mọi <select> (src/lib/select-menu.js). Tinh chỉnh theo ngữ cảnh qua --sm-radius, --sm-pad, --sm-bg. */
+/* Dropdown dùng chung cho mọi <select> (src/components/dropdown.js). Tinh chỉnh theo ngữ cảnh qua --sm-radius, --sm-pad, --sm-bg. */
 .sm { position: relative; min-width: 0; }
 .sm > select.sm-native {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
@@ -50,6 +50,10 @@
 }
 @keyframes smIn { from { opacity: 0; transform: translateY(-4px); } }
 @keyframes smInUp { from { opacity: 0; transform: translateY(4px); } }
+/* Bản gọn dùng trong bảng */
+.sm-sm { --sm-pad: 7px 34px 7px 12px; --sm-radius: 10px; --sm-bg: #fff; min-width: 150px; }
+.sm-sm .sm-btn { font-size: .88rem; }
+.sm-sm .sm-btn::after { right: 14px; }
 @media (prefers-reduced-motion: reduce) {
   .sm-list { animation: none; }
   .sm-btn, .sm-btn::after { transition: none; }

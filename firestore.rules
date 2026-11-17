@@ -4,6 +4,10 @@ rules_version = '2';
 // keyed by its lowercased email, once (a second submit is an update and is denied). Only admins may read, list or delete.
 // Older documents at /registrations/{uid} came from the Google sign-in flow; that path stays until open pages reload.
 // Keep the admin list in sync with src/lib/admins.js.
+//
+// Đăng ký lịch học (trang /lich): chỉ email có trong /students mới vào được, mỗi sinh viên chỉ đọc/ghi bản ghi của mình.
+// /schedule/config giữ trạng thái (draft → open → closed → published) và các buổi; /schedule/classes giữ lớp.
+// Sinh viên chỉ ghi lịch rảnh khi trạng thái là open, chỉ thấy lớp và kết quả xếp khi đã published.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -19,6 +23,19 @@ service cloud.firestore {
 
     function isStudent() {
       return signedIn();
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // Sinh viên nằm trong danh sách được đăng ký lịch (admin nhập vào /students)
+    function isListed() {
+      return signedIn() && exists(/databases/$(database)/documents/students/$(myEmail()));
+    }
+
+    function scheduleStatus() {
+      return get(/databases/$(database)/documents/schedule/config).data.status;
     }
 
     function validOpenRegistration(id, d) {
@@ -64,6 +81,41 @@ service cloud.firestore {
         && validRegistration(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isAdmin();
+    }
+
+    // Sinh viên chỉ được điền MSSV khi ô đó đang trống, không sửa được trường nào khác
+    match /students/{email} {
+      allow get: if isAdmin() || (signedIn() && myEmail() == email);
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && myEmail() == email
+        && resource.data.studentId == ''
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentId'])
+        && request.resource.data.studentId is string
+        && request.resource.data.studentId.matches('[A-Z]{2}[0-9]{6}'));
+    }
+
+    match /schedule/{docId} {
+      allow read: if isAdmin()
+        || (docId == 'config' && isListed())
+        || (docId == 'classes' && isListed() && scheduleStatus() == 'published');
+      allow write: if isAdmin();
+    }
+
+    match /availability/{email} {
+      allow get: if isAdmin() || (signedIn() && myEmail() == email);
+      allow list, delete: if isAdmin();
+      allow create, update: if isListed() && myEmail() == email
+        && scheduleStatus() == 'open'
+        && request.resource.data.keys().hasOnly(['sessionIds', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['sessionIds', 'updatedAt'])
+        && request.resource.data.sessionIds is list
+        && request.resource.data.sessionIds.size() <= 60
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /assignments/{email} {
+      allow get: if isAdmin() || (signedIn() && myEmail() == email && scheduleStatus() == 'published');
+      allow list, create, update, delete: if isAdmin();
     }
   }
 }

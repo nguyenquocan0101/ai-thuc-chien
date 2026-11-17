@@ -3,30 +3,32 @@ import { resolve } from "node:path";
 
 const root = import.meta.dirname;
 
-// Vite only serves admin/index.html at /admin/; send /admin there like the static host does
-const toAdminSlash = (req, res, next) => {
-  if (req.url === "/admin" || req.url.startsWith("/admin?")) {
+// Vite only serves admin/index.html at /admin/; send /admin (and /lich) there like the static host does
+const toPageSlash = (req, res, next) => {
+  const m = /^\/(admin|lich)(\?.*)?$/.exec(req.url);
+  if (m) {
     res.statusCode = 301;
-    res.setHeader("Location", "/admin/" + req.url.slice("/admin".length));
+    res.setHeader("Location", `/${m[1]}/${m[2] || ""}`);
     res.end();
     return;
   }
   next();
 };
 
-// Two pages: the landing page (/) and the registration admin (/admin)
+// Three pages: the landing page (/), the admin (/admin) and schedule registration for students (/lich)
 export default defineConfig({
   appType: "mpa", // no SPA fallback: unknown paths 404 instead of silently serving the landing page
   plugins: [{
-    name: "admin-trailing-slash",
-    configureServer: server => { server.middlewares.use(toAdminSlash); },
-    configurePreviewServer: server => { server.middlewares.use(toAdminSlash); }
+    name: "page-trailing-slash",
+    configureServer: server => { server.middlewares.use(toPageSlash); },
+    configurePreviewServer: server => { server.middlewares.use(toPageSlash); }
   }],
   build: {
     rollupOptions: {
       input: {
         main: resolve(root, "index.html"),
-        admin: resolve(root, "admin/index.html")
+        admin: resolve(root, "admin/index.html"),
+        lich: resolve(root, "lich/index.html")
       }
     }
   }

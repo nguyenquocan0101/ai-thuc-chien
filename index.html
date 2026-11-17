@@ -16,7 +16,7 @@
     <div class="bar">
       <nav class="nav" aria-label="Menu">
         <button class="lang" type="button" id="langBtn"></button>
-        <a class="btn btn-primary btn-sm" href="#dang-ky" data-i18n="nav.cta"></a>
+        <a class="btn btn-primary btn-sm" href="/lich/" data-signin data-i18n="nav.cta"></a>
       </nav>
     </div>
   </glass-element>
@@ -30,7 +30,7 @@
         <p class="slogan" data-i18n-html="hero.slogan"></p>
         <p class="sub" data-i18n="hero.sub"></p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="#dang-ky" data-i18n="hero.cta"></a>
+          <a class="btn btn-primary" href="/lich/" data-signin data-i18n="hero.cta"></a>
           <glass-element class="glass-cta" auto-size radius="26" blur="2" strength="60" depth="10" chromatic-aberration="2" background-color="rgba(255,255,255,0.55)"><a href="#noi-dung" data-i18n="hero.cta2"></a></glass-element>
         </div>
       </div>
@@ -66,88 +66,21 @@
     <div class="inner">
 
       <div class="reg-cta rv" id="regCta">
-        <div class="cta-bar" aria-hidden="true"><i></i><i></i><i></i><span>~/ai-thuc-chien — dang-ky</span></div>
+        <div class="cta-bar" aria-hidden="true"><i></i><i></i><i></i><span>~/ai-thuc-chien — lich-hoc</span></div>
         <div class="cta-main">
           <p class="cta-when" id="ctaWhen"><span></span></p>
           <h2 id="ctaT" data-i18n="r.ctaT"></h2>
           <p class="r-lead" data-i18n="r.ctaP"></p>
         </div>
         <div class="cta-side">
-          <!-- Ba tầng gấp/mở trong cùng một cột: lời mời, form, đã nhận. Chiều cao chuyển mượt bằng grid-template-rows -->
-          <div class="cta-fold is-settled" id="foldPitch">
-            <div class="fold-in">
-              <ul class="cta-perks">
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk1"></span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk2"></span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="r.perk3"></span></li>
-              </ul>
-              <button type="button" class="btn btn-primary reg-go" id="gBtn" aria-controls="regForm" aria-expanded="false"><span data-i18n="r.join"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-            </div>
-          </div>
-
-          <div class="cta-fold is-shut" id="foldForm" inert>
-            <div class="fold-in">
-              <form class="reg-form" id="regForm" aria-labelledby="ctaT" novalidate>
-                <div class="field">
-                  <label for="f-email"><span data-i18n="f.email"></span> <span class="req">*</span></label>
-                  <input id="f-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="ten@gmail.com" aria-describedby="e-email">
-                  <span class="err" id="e-email"></span>
-                </div>
-                <div class="pick-row">
-                  <div class="field">
-                    <label for="f-name"><span data-i18n="f.name"></span> <span class="req">*</span></label>
-                    <input id="f-name" name="name" type="text" autocomplete="name" maxlength="120" data-i18n-ph="f.namePh" aria-describedby="e-name">
-                    <span class="err" id="e-name"></span>
-                  </div>
-                  <div class="field">
-                    <label for="f-sid"><span data-i18n="r.sid"></span> <span class="req">*</span></label>
-                    <input id="f-sid" name="studentId" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="SE123456" aria-describedby="e-sid">
-                    <span class="err" id="e-sid"></span>
-                  </div>
-                </div>
-                <div class="pick-row">
-                  <div class="field">
-                    <label for="f-major"><span data-i18n="r.major"></span> <span class="req">*</span></label>
-                    <select id="f-major" name="major" aria-describedby="e-major" data-placeholder>
-                      <option value="" data-i18n="f.majorPick"></option>
-                      <option value="SE" data-i18n="m.se"></option>
-                      <option value="AI" data-i18n="m.ai"></option>
-                      <option value="IA" data-i18n="m.ia"></option>
-                      <option value="IS" data-i18n="m.is"></option>
-                      <option value="OTHER" data-i18n="m.other"></option>
-                    </select>
-                    <span class="err" id="e-major"></span>
-                  </div>
-                  <div class="field">
-                    <label for="f-term"><span data-i18n="f.term"></span> <span class="req">*</span></label>
-                    <select id="f-term" name="term" aria-describedby="e-term" data-placeholder><option value="" data-i18n="f.termPick"></option></select>
-                    <span class="err" id="e-term"></span>
-                  </div>
-                </div>
-                <div class="pledge-box">
-                  <b data-i18n="f.pledge"></b>
-                  <div class="pledge-list" data-i18n-html="f.pledgeText"></div>
-                  <label class="tick"><input type="checkbox" id="c-pledge"> <span><span data-i18n="f.pledgeTick"></span> <span class="req">*</span></span></label>
-                </div>
-                <div class="submit-row">
-                  <button class="btn btn-primary" type="submit" id="submitBtn" disabled><span data-i18n="f.submit"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-                  <p class="hint" id="submitHint" aria-live="polite"></p>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <div class="cta-fold is-shut" id="foldDone" inert>
-            <div class="fold-in">
-              <div class="done" id="done" tabindex="-1">
-                <span class="ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
-                <h3 id="doneTitle"></h3>
-                <p id="doneText"></p>
-                <dl class="done-sum" id="doneSum"></dl>
-                <p class="demo-note" id="demoNote" data-i18n="f.demo" hidden></p>
-              </div>
-            </div>
-          </div>
+          <ul class="cta-perks">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="s.step1"></span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="s.step2"></span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="s.step3"></span></li>
+          </ul>
+          <!-- Không có JS hoặc SDK chưa tải xong thì vẫn sang được /lich để đăng nhập ở đó -->
+          <a class="btn btn-primary reg-go" id="gBtn" href="/lich/" data-signin><span data-i18n="s.go"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="cta-hint" id="ctaHint" aria-live="polite"></p>
         </div>
       </div>
     </div>

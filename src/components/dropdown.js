@@ -2,6 +2,9 @@
 // The native <select> stays in the DOM as the source of truth (value, form, validation);
 // a button shows the current choice and a listbox (portalled to <body> so no ancestor clips it) shows the options.
 // Add data-placeholder to a <select> to hide its value="" option from the list and grey it out on the button.
+// The listbox is attached only while open, so lists re-rendered many times (table rows) leave nothing behind.
+//
+// Dùng: enhanceSelects() cho các <select> có sẵn trong HTML, hoặc createDropdown({...}) để tạo mới bằng JS.
 
 let seq = 0;
 const valueDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
@@ -35,9 +38,8 @@ export function enhanceSelect(select) {
   list.setAttribute("role", "listbox");
   list.hidden = true;
 
-  select.before(wrap);
+  if (select.parentNode) select.before(wrap);
   wrap.append(select, btn);
-  document.body.append(list);
   select.classList.add("sm-native");
   select.tabIndex = -1;
   select.setAttribute("aria-hidden", "true");
@@ -92,6 +94,7 @@ export function enhanceSelect(select) {
   }
 
   function place() {
+    if (!wrap.isConnected) { close(false); return; } // dropdown bị gỡ khỏi trang khi đang mở (bảng dựng lại)
     const r = btn.getBoundingClientRect(), gap = 6, margin = 8;
     const natural = Math.min(list.scrollHeight, 300);
     const below = innerHeight - r.bottom - gap - margin, above = r.top - gap - margin;
@@ -125,6 +128,7 @@ export function enhanceSelect(select) {
   function close(refocus) {
     if (list.hidden) return;
     list.hidden = true;
+    list.remove();
     btn.setAttribute("aria-expanded", "false");
     btn.removeAttribute("aria-activedescendant");
     wrap.classList.remove("sm-open");
@@ -135,6 +139,7 @@ export function enhanceSelect(select) {
   }
 
   function pick(i) {
+    if (!wrap.isConnected) { close(false); return; }
     const o = items[i];
     if (o && !o.selected) {
       valueDesc.set.call(select, o.value);
@@ -196,4 +201,28 @@ export function enhanceSelect(select) {
   select.focus = () => btn.focus(); // callers focusing the select (e.g. validation) land on the visible control
 
   render();
+}
+
+/**
+ * Tạo dropdown bằng JS. Trả về phần tử bọc (.sm) để chèn vào trang; đọc/ghi giá trị qua `.select.value`.
+ * - options: [{ value, label }]
+ * - label: tên cho trình đọc màn hình (aria-label)
+ * - placeholder: chữ hiện khi chưa chọn (tương ứng option value="")
+ * - size: "sm" cho bản gọn trong bảng
+ */
+export function createDropdown({ options, value = "", label = "", placeholder = "", onChange, size = "" }) {
+  const select = document.createElement("select");
+  if (label) select.setAttribute("aria-label", label);
+  if (placeholder) {
+    select.setAttribute("data-placeholder", "");
+    select.append(new Option(placeholder, ""));
+  }
+  options.forEach(o => select.append(new Option(o.label, o.value)));
+  select.value = value;
+  if (onChange) select.addEventListener("change", () => onChange(select.value));
+  enhanceSelect(select);
+  const wrap = select.parentNode;
+  if (size) wrap.classList.add("sm-" + size);
+  wrap.select = select;
+  return wrap;
 }

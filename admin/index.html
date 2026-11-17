@@ -39,28 +39,130 @@
     <button class="btn btn-primary" type="button" id="switchBtn">Đăng nhập tài khoản khác</button>
   </section>
 
-  <section id="vList" hidden>
-    <div class="head">
-      <div>
-        <h1>Danh sách đăng ký</h1>
-        <p class="muted" id="summary"></p>
+  <section class="sb-layout" id="vList" hidden>
+    <!-- src/components/sidebar.js dựng menu vào đây -->
+    <div id="sidebarSlot"></div>
+    <div class="sb-main">
+    <p class="err" id="schErr" role="alert"></p>
+
+    <div class="panel-page" id="pDangKy">
+      <div class="head">
+        <div>
+          <h1>Danh sách đăng ký</h1>
+          <p class="muted" id="summary"></p>
+        </div>
+        <div class="tools">
+          <input type="search" id="q" placeholder="Tìm tên, email…" aria-label="Tìm kiếm">
+          <select id="fMajor" aria-label="Lọc theo ngành"><option value="">Tất cả ngành</option></select>
+          <button class="btn btn-ghost" type="button" id="csvBtn">Xuất CSV</button>
+        </div>
       </div>
-      <div class="tools">
-        <input type="search" id="q" placeholder="Tìm tên, email…" aria-label="Tìm kiếm">
-        <select id="fMajor" aria-label="Lọc theo ngành"><option value="">Tất cả ngành</option></select>
-        <button class="btn btn-ghost" type="button" id="csvBtn">Xuất CSV</button>
+      <div class="chips" id="chips"></div>
+      <p class="err" id="listErr" role="alert"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Ngành</th><th>Kỳ</th><th>Đăng ký lúc</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p class="empty muted" id="empty" hidden>Chưa có sinh viên nào đăng ký.</p>
       </div>
     </div>
-    <div class="chips" id="chips"></div>
-    <p class="err" id="listErr" role="alert"></p>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Ngành</th><th>Kỳ</th><th>Đăng ký lúc</th></tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <p class="empty muted" id="empty" hidden>Chưa có sinh viên nào đăng ký.</p>
+
+    <div class="panel-page" id="pSinhVien" hidden>
+      <div class="head">
+        <div>
+          <h1>Sinh viên đăng ký lịch</h1>
+          <p class="muted" id="stuSummary"></p>
+        </div>
+        <div class="tools">
+          <input type="search" id="stuQ" placeholder="Tìm tên, email, MSSV…" aria-label="Tìm sinh viên">
+          <button class="btn btn-ghost" type="button" id="stuCsv">Xuất CSV</button>
+        </div>
+      </div>
+      <details class="card panel" id="importBox">
+        <summary>Nhập danh sách từ Google Sheet</summary>
+        <p class="muted">Trong Sheet, chọn cả bảng (gồm dòng tiêu đề), copy rồi dán vào ô dưới. Cần có cột Email; các cột Họ tên, MSSV, Ngành, Kỳ có thì được lấy. Dán lại lần nữa sẽ cập nhật, MSSV sinh viên đã tự điền không bị xoá.</p>
+        <textarea id="importText" rows="7" spellcheck="false" aria-label="Dữ liệu dán từ Sheet"></textarea>
+        <div class="actions"><button class="btn btn-ghost" type="button" id="importCheck">Xem trước</button></div>
+        <div id="importResult"></div>
+      </details>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Báo lịch</th><th>Lớp</th></tr></thead>
+          <tbody id="stuRows"></tbody>
+        </table>
+        <p class="empty muted" id="stuEmpty" hidden></p>
+      </div>
+    </div>
+
+    <div class="panel-page" id="pLich" hidden>
+      <div class="head"><div><h1>Lịch &amp; lớp</h1><p class="muted">Trạng thái đăng ký, các buổi học và lớp.</p></div></div>
+      <div class="card panel">
+        <h2>Trạng thái đăng ký lịch</h2>
+        <div class="seg" id="statusSeg" role="radiogroup" aria-label="Trạng thái đăng ký lịch">
+          <label><input type="radio" name="status" value="draft"><span>Chưa mở</span></label>
+          <label><input type="radio" name="status" value="open"><span>Mở đăng ký</span></label>
+          <label><input type="radio" name="status" value="closed"><span>Đóng, đang xếp</span></label>
+          <label><input type="radio" name="status" value="published"><span>Công bố lớp</span></label>
+        </div>
+        <p class="muted" id="statusHint"></p>
+        <p class="muted">Link cho sinh viên: <a id="studentLink" href="/lich/" target="_blank" rel="noopener"></a></p>
+      </div>
+
+      <div class="card panel">
+        <h2>Buổi học</h2>
+        <p class="muted">Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00. Bấm vào buổi để bỏ (ngày nghỉ) hoặc thêm lại.</p>
+        <div class="range">
+          <label>Từ ngày <input type="date" id="dFrom"></label>
+          <label>Đến ngày <input type="date" id="dTo"></label>
+        </div>
+        <div id="sessGrid"></div>
+        <div class="actions"><span class="muted" id="sessHint"></span><button class="btn btn-primary" type="button" id="sessSave">Lưu buổi học</button></div>
+      </div>
+
+      <div class="card panel">
+        <h2>Lớp</h2>
+        <p class="muted">Mỗi lớp học một nhóm buổi cố định. Thuật toán xếp mỗi sinh viên vào lớp trùng nhiều buổi rảnh nhất, nên sĩ số đi theo lịch sinh viên đăng ký. Chỉ nhập sĩ số tối đa khi phòng học có giới hạn.</p>
+        <div id="classList"></div>
+        <div class="actions">
+          <button class="btn btn-ghost" type="button" id="classAdd">Thêm lớp</button>
+          <span class="muted" id="classHint"></span>
+          <button class="btn btn-primary" type="button" id="classSave">Lưu lớp</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-page" id="pXepLop" hidden>
+      <div class="head"><div><h1>Xếp lớp</h1><p class="muted">Tổng hợp lịch rảnh, xếp sinh viên vào lớp rồi lưu kết quả.</p></div></div>
+      <div class="card panel">
+        <h2>Tổng hợp lịch rảnh</h2>
+        <p class="muted" id="sumHint"></p>
+        <div id="sumGrid"></div>
+      </div>
+      <div class="card panel">
+        <div class="head">
+          <div>
+            <h2>Kết quả xếp lớp</h2>
+            <p class="muted" id="arrHint"></p>
+          </div>
+          <div class="tools">
+            <button class="btn btn-ghost" type="button" id="arrRun">Chạy xếp tự động</button>
+            <button class="btn btn-ghost" type="button" id="arrCsv">Xuất CSV</button>
+            <button class="btn btn-primary" type="button" id="arrSave">Lưu kết quả</button>
+          </div>
+        </div>
+        <div class="chips" id="arrChips"></div>
+        <div class="table-wrap">
+          <table>
+            <thead id="arrHead"></thead>
+            <tbody id="arrRows"></tbody>
+          </table>
+          <p class="empty muted" id="arrEmpty" hidden>Chưa có sinh viên. Nhập danh sách ở mục Sinh viên.</p>
+        </div>
+      </div>
+    </div>
     </div>
   </section>
 </main>

@@ -1,13 +1,16 @@
 import { signInWithGoogle, signOutUser, onUserChange, watchRegistrations } from "./lib/firebase.js";
 import { isAdminEmail } from "./lib/admins.js";
-import { enhanceSelects } from "./lib/select-menu.js";
+import { enhanceSelects } from "./components/dropdown.js";
+import { createSidebar } from "./components/sidebar.js";
+import { downloadCsv } from "./lib/csv.js";
+import { startSchedule } from "./scripts/admin-schedule.js";
 
 const $ = id => document.getElementById(id);
 const MAJORS = { SE: "Kỹ thuật phần mềm", AI: "Trí tuệ nhân tạo", IA: "An toàn thông tin", IS: "Hệ thống thông tin", OTHER: "Ngành khác" };
 const views = ["vLoading", "vLogin", "vDenied", "vList"];
 const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 
-let all = [], stopWatch = null;
+let all = [], stopWatch = null, stopSchedule = null;
 
 const toDate = ts => (ts && typeof ts.toDate === "function" ? ts.toDate() : null);
 const fmtDate = ts => { const d = toDate(ts); return d ? d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" }) : "—"; };
@@ -15,6 +18,24 @@ const majorName = code => MAJORS[code] || code || "—";
 
 Object.entries(MAJORS).forEach(([code, name]) => { const o = document.createElement("option"); o.value = code; o.textContent = name; $("fMajor").appendChild(o); });
 enhanceSelects();
+
+// Icon nét 24×24 cho từng mục của sidebar
+const ICONS = {
+  list: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h6"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  shuffle: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'
+};
+const nav = createSidebar({
+  label: "Mục quản trị",
+  items: [
+    { id: "dang-ky", label: "Đăng ký", panel: "pDangKy", icon: ICONS.list },
+    { id: "sinh-vien", label: "Sinh viên", panel: "pSinhVien", icon: ICONS.users },
+    { id: "lich", label: "Lịch & lớp", panel: "pLich", icon: ICONS.calendar },
+    { id: "xep-lop", label: "Xếp lớp", panel: "pXepLop", icon: ICONS.shuffle }
+  ]
+});
+$("sidebarSlot").replaceWith(nav.el);
 
 function filtered() {
   const q = $("q").value.trim().toLowerCase(), m = $("fMajor").value;
@@ -43,32 +64,26 @@ function render() {
   }));
 }
 
-// Spreadsheet apps execute cells starting with = + - @ as formulas
-const csvCell = v => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
-
 function exportCsv() {
   const head = ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Đăng ký lúc", "Cập nhật lúc"];
   const lines = filtered().map((r, i) => [i + 1, r.name, r.email, r.studentId || "", majorName(r.major), r.term, fmtDate(r.createdAt), r.updatedAt ? fmtDate(r.updatedAt) : ""]);
-  const csv = "﻿" + [head, ...lines].map(row => row.map(csvCell).join(",")).join("\r\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = `dang-ky-ai-thuc-chien-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  downloadCsv("dang-ky-ai-thuc-chien", head, lines);
 }
 
 function startWatch() {
   $("listErr").textContent = "";
-  stopWatch = watchRegistrations(rows => { all = rows; render(); }, err => {
+  stopWatch = watchRegistrations(rows => { all = rows; render(); nav.setBadge("dang-ky", String(rows.length)); }, err => {
     console.error(err);
     $("listErr").textContent = err.code === "permission-denied"
       ? "Firestore từ chối quyền đọc. Kiểm tra email này đã có trong firestore.rules chưa."
       : "Không tải được dữ liệu: " + err.message;
   });
+  stopSchedule = startSchedule({ majors: MAJORS, registrations: () => all, setBadge: nav.setBadge });
 }
 
 onUserChange(user => {
   if (stopWatch) { stopWatch(); stopWatch = null; }
+  if (stopSchedule) { stopSchedule(); stopSchedule = null; }
   $("who").hidden = !user;
   if (!user) { showView("vLogin"); return; }
   $("whoMail").textContent = user.email;
