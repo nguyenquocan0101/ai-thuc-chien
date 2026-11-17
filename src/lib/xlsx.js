@@ -1,6 +1,7 @@
 // Ghi file Excel (.xlsx) nhiều trang tính, không cần thư viện ngoài.
 // Ô chữ ghi dạng inlineStr nên Excel không bao giờ hiểu nội dung thành công thức; dòng đầu in đậm và được cố định.
-// sheets: [{ name, rows: [[ô, ...], ...], widths?: [số ký tự mỗi cột] }], ô là chuỗi, số hoặc rỗng.
+// sheets: [{ name, rows: [[ô, ...], ...], widths?: [số ký tự mỗi cột], head?: chỉ số dòng tiêu đề bảng (mặc định 0) }],
+// ô là chuỗi, số hoặc rỗng. Các dòng phía trên dòng tiêu đề (tóm tắt) có cột đầu in đậm.
 
 const enc = new TextEncoder();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))
@@ -10,16 +11,16 @@ const colName = i => { let s = ""; for (i++; i; i = Math.floor((i - 1) / 26)) s 
 // Tên trang tính: tối đa 31 ký tự, không chứa : \ / ? * [ ]
 const sheetName = s => String(s).replace(/[:\\/?*[\]]/g, " ").slice(0, 31) || "Sheet";
 
-function sheetXml({ rows, widths }) {
+function sheetXml({ rows, widths, head = 0 }) {
   const cols = widths?.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
   const body = rows.map((row, r) => `<row r="${r + 1}">${row.map((v, c) => {
     if (v === "" || v == null) return "";
-    const ref = `${colName(c)}${r + 1}`, style = r === 0 ? ' s="1"' : "";
+    const ref = `${colName(c)}${r + 1}`, style = r === head ? ' s="1"' : r < head && c === 0 ? ' s="2"' : "";
     return typeof v === "number" && Number.isFinite(v)
       ? `<c r="${ref}"${style}><v>${v}</v></c>`
       : `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
   }).join("")}</row>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData></worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="${head + 1}" topLeftCell="A${head + 2}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData></worksheet>`;
 }
 
 function files(sheets) {
@@ -29,7 +30,7 @@ function files(sheets) {
     ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
     ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${esc(sheetName(s.name))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`],
     ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
-    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE7D6"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE7D6"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>`],
     ...sheets.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s)])
   ];
   return list.map(([name, text]) => ({ name: enc.encode(name), data: enc.encode(text) }));
