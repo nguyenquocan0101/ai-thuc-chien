@@ -160,7 +160,6 @@ function exportWorkbook() {
   const total = {
     name: "Tổng sinh viên",
     head: 6,
-    widths: [6, 28, 32, 12, 22, 6, 9, 14, 18],
     rows: [
       ["Tổng số sinh viên đăng ký", students.length],
       ["Ca sáng", n.am],
@@ -182,7 +181,6 @@ function exportWorkbook() {
     return {
       name: c.name || "Lớp",
       head: 6,
-      widths: [6, 28, 12, 32, 22, 6],
       rows: [
         ["Ca", SHIFTS[sh] ? `${SHIFTS[sh].name} ${SHIFTS[sh].time}` : ""],
         ["Thời gian", span(sh ? ofShift(sh) : [])],
@@ -204,7 +202,6 @@ function exportWorkbook() {
     return {
       name: `${dayCol(date).replace("/", "-")} ${SHIFTS[shift]?.name || shift}`,
       head: 5,
-      widths: [6, 28, 12, 32, 10, 24],
       rows: [
         ["Ngày", fmtDay(date)],
         ["Ca", SHIFTS[shift] ? `${SHIFTS[shift].name} ${SHIFTS[shift].time}` : shift],

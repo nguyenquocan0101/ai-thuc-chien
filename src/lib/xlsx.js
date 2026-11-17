@@ -1,6 +1,6 @@
 // Ghi file Excel (.xlsx) nhiều trang tính, không cần thư viện ngoài.
 // Ô chữ ghi dạng inlineStr nên Excel không bao giờ hiểu nội dung thành công thức; dòng đầu in đậm và được cố định.
-// sheets: [{ name, rows: [[ô, ...], ...], widths?: [số ký tự mỗi cột], head?: chỉ số dòng tiêu đề bảng (mặc định 0) }],
+// sheets: [{ name, rows: [[ô, ...], ...], head?: chỉ số dòng tiêu đề bảng (mặc định 0) }], cột tự giãn theo nội dung;
 // ô là chuỗi, số hoặc rỗng. Các dòng phía trên dòng tiêu đề (tóm tắt) có cột đầu in đậm.
 
 const enc = new TextEncoder();
@@ -11,8 +11,19 @@ const colName = i => { let s = ""; for (i++; i; i = Math.floor((i - 1) / 26)) s 
 // Tên trang tính: tối đa 31 ký tự, không chứa : \ / ? * [ ]
 const sheetName = s => String(s).replace(/[:\\/?*[\]]/g, " ").slice(0, 31) || "Sheet";
 
-function sheetXml({ rows, widths, head = 0 }) {
-  const cols = widths?.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
+// Độ rộng cột theo nội dung dài nhất của cột (tính cả dòng tóm tắt và tiêu đề), để không ô nào bị cắt chữ
+function autoWidths(rows) {
+  const w = [];
+  rows.forEach(row => row.forEach((v, c) => {
+    const len = v === "" || v == null ? 0 : String(v).length;
+    w[c] = Math.max(w[c] || 0, len);
+  }));
+  return w.map(len => Math.min(Math.max(Math.ceil(len * 1.15) + 3, 6), 70));
+}
+
+function sheetXml({ rows, head = 0 }) {
+  const widths = autoWidths(rows);
+  const cols = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
   const body = rows.map((row, r) => `<row r="${r + 1}">${row.map((v, c) => {
     if (v === "" || v == null) return "";
     const ref = `${colName(c)}${r + 1}`, style = r === head ? ' s="1"' : r < head && c === 0 ? ' s="2"' : "";
