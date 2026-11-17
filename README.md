@@ -20,14 +20,14 @@ npm run preview   # chạy thử bản build
 | Đường dẫn | Nội dung |
 |---|---|
 | `index.html` | Trang landing: header, hero, chương trình, 6 chặng, nút đăng nhập xem lịch, FAQ |
-| `admin/index.html` | Trang `/admin`: danh sách đăng ký, danh sách sinh viên, buổi học và lớp, xếp lớp |
+| `admin/index.html` | Trang `/admin`: danh sách đăng ký, danh sách sinh viên, buổi học và lớp |
 | `lich/index.html` | Trang `/lich`: sinh viên đăng nhập Google, bổ sung MSSV, chọn buổi rảnh, xem lớp |
 | `src/main.js` | Điểm vào của landing, gọi các module theo đúng thứ tự |
 | `src/admin.js` | Logic trang quản trị: đăng nhập, sidebar, danh sách đăng ký (realtime, lọc, xuất CSV) |
-| `src/scripts/admin-schedule.js` | Các mục Sinh viên, Lịch & lớp, Xếp lớp của trang quản trị |
+| `src/scripts/admin-schedule.js` | Các mục Sinh viên, Buổi học (kèm trạng thái đăng ký lịch), Lớp của trang quản trị |
 | `src/schedule.js` | Logic trang `/lich` |
-| `src/lib/schedule.js`, `arrange.js`, `csv.js` | Ca học và nhãn ngày, thuật toán xếp lớp, xuất CSV |
-| `src/components/` | Component dùng lại được, mỗi cái một cặp `.js` + `.css`: `dropdown` (thay mọi `<select>`), `session-grid` (lưới ngày × ca), `sidebar` (menu trái, thành thanh ngang trên điện thoại) |
+| `src/lib/schedule.js`, `csv.js` | Ca học và nhãn ngày, xuất CSV |
+| `src/components/` | Component dùng lại được, mỗi cái một cặp `.js` + `.css`: `dropdown` (thay mọi `<select>`), `session-grid` (lưới ngày × ca), `sidebar` (menu trái, thành thanh ngang trên điện thoại), `page-header` (breadcrumb, tiêu đề, nút của từng mục) |
 | `src/scripts/i18n.js` | Từ điển VI/EN, `applyLang()`, nút đổi ngôn ngữ |
 | `src/scripts/course.js` | Thông tin chương trình (thời gian, phòng, hạn đăng ký…) |
 | `src/scripts/schedule-cta.js` | Đăng ký đã đóng: các nút "Xem lịch" mở đăng nhập Google ngay trên trang chủ rồi chuyển sang `/lich` |
@@ -64,28 +64,21 @@ Cài đặt một lần trên Firebase Console (CLI không làm được):
 
 Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: dùng Firebase Emulator (xem mục bên dưới), mở trang kèm `?emu`.
 
-## Đăng ký lịch học và xếp lớp
+## Đăng ký lịch học
 
-Trang `/lich` dành cho sinh viên có trong danh sách. Quy trình của ban tổ chức trên `/admin`:
+Trang `/lich` dành cho sinh viên có trong danh sách. Trạng thái đăng ký lịch đổi bằng nút trên đầu mục **Buổi học** của `/admin`. Quy trình của ban tổ chức:
 
 1. **Sinh viên:** dán danh sách từ Google Sheet (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; ai vẫn thiếu sẽ được hỏi khi đăng nhập.
-2. **Lịch & lớp:**
-   - Chọn khoảng ngày rồi bỏ những buổi nghỉ. Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00.
-   - Tạo lớp: tên, link nhóm Zalo và các buổi học của lớp. Sĩ số tối đa để trống là không giới hạn.
-3. Chuyển trạng thái **Mở đăng ký**, gửi link `/lich` cho sinh viên.
+2. **Buổi học:** chọn khoảng ngày rồi bỏ những buổi nghỉ. Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00.
+3. **Lớp:** mỗi ca một lớp (mặc định Lớp sáng và Lớp chiều), mỗi lớp một dòng trong bảng: tên, ca và link nhóm Zalo. Cột Sinh viên là số người chọn ca đó.
+4. Chuyển trạng thái **Mở đăng ký**, gửi link `/lich` cho sinh viên.
    - Sinh viên đăng nhập Google đúng email đã đăng ký.
    - Ai thiếu MSSV phải bổ sung trước.
-   - Sinh viên chọn bao nhiêu buổi rảnh cũng được và sửa được tới khi đóng.
-4. Chuyển **Đóng, đang xếp**.
-5. Ở mục **Xếp lớp**, bấm **Chạy xếp tự động**:
-   - Mỗi sinh viên vào lớp trùng nhiều buổi rảnh nhất, nên sĩ số các lớp đi theo lịch đăng ký và có thể lệch nhau.
-   - Ai khớp các lớp như nhau thì vào lớp ít người hơn.
-   - Lớp có nhập sĩ số tối đa mà đã đủ thì sinh viên sang lớp khớp kế tiếp.
-   - Đổi số lớp, buổi của lớp hoặc sĩ số thì chạy lại.
-   - Chỉnh tay ở cột Lớp nếu cần, rồi bấm **Lưu kết quả**.
-6. Chuyển **Công bố lớp**. Sinh viên thấy lớp, các buổi học và link Zalo của mình.
+   - Sinh viên chọn học ca sáng hoặc ca chiều cho cả đợt, đổi được tới khi đóng.
+5. Chuyển **Đóng đăng ký** khi hết hạn. Mục **Sinh viên** cho biết ai học ca nào, ai chưa chọn.
+6. Chuyển **Công bố lớp**. Không cần xếp lớp: sinh viên vào lớp của ca đã chọn và thấy các buổi học cùng link Zalo của lớp. Ai chưa chọn ca thì không có lớp.
 
-Dữ liệu nằm ở `students/{email}`, `schedule/config` (trạng thái và các buổi), `schedule/classes`, `availability/{email}`, `assignments/{email}`. Không có backend: `firestore.rules` quyết định ai đọc ghi được gì.
+Dữ liệu nằm ở `students/{email}`, `schedule/config` (trạng thái và các buổi), `schedule/classes`, `availability/{email}` (các buổi của ca sinh viên chọn). Không có backend: `firestore.rules` quyết định ai đọc ghi được gì.
 
 Chạy thử không đụng dữ liệu thật bằng Firebase Emulator:
 

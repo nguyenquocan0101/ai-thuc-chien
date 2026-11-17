@@ -8,7 +8,7 @@ export const SHIFTS = {
 export const STATUS = {
   draft: "Chưa mở",
   open: "Đang mở đăng ký",
-  closed: "Đã đóng, đang xếp lớp",
+  closed: "Đã đóng đăng ký",
   published: "Đã công bố lớp"
 };
 
@@ -24,6 +24,8 @@ const short = iso => { const d = toDate(iso); return `${pad(d.getDate())}/${pad(
 export const sessionId = (date, shift) => `${date}-${shift}`;
 export const parseSession = id => ({ date: id.slice(0, 10), shift: id.slice(11) });
 export const dayLabel = iso => `${DOW[toDate(iso).getDay()]} ${short(iso)}`;
+// Ca của một nhóm buổi: "am"/"pm" khi mọi buổi cùng một ca, "" khi trống hoặc lẫn cả hai ca
+export const shiftOf = ids => { const s = new Set([...ids].map(id => parseSession(id).shift)); return s.size === 1 ? [...s][0] : ""; };
 
 export function sessionLabel(id) {
   const { date, shift } = parseSession(id);

@@ -1,10 +1,10 @@
 export const I18N = {
   vi: {
-    "nav.program": "Nội dung", "nav.schedule": "Lịch học", "nav.faq": "Hỏi đáp", "nav.cta": "Xem lịch",
+    "nav.program": "Nội dung", "nav.schedule": "Lịch học", "nav.faq": "Hỏi đáp", "nav.cta": "Đăng nhập",
     "doc.title": "AI Thực Chiến FA26",
     "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
     "hero.sub": "Từ yêu cầu đến phần mềm chạy thật. AI hỗ trợ từng bước, bạn kiểm chứng và quyết định.",
-    "hero.cta": "Xem lịch học", "hero.cta2": "Xem nội dung", "hero.scroll": "Cuộn để khám phá",
+    "hero.cta": "Đăng nhập", "hero.cta2": "Xem nội dung", "hero.scroll": "Cuộn để khám phá",
     "val.eyebrow": "Chương trình", "val.title": "Học làm phần mềm khi AI là đồng đội.",
     "val.h1": "Không chỉ là công cụ", "val.p1": "Bạn đưa AI vào từng bước của quy trình: phân tích yêu cầu, thiết kế, lập trình và kiểm thử. Mục tiêu là biết dùng AI đúng chỗ, không phải thuộc lòng một công cụ.",
     "val.h2": "AI đề xuất, bạn quyết định", "val.p2": "AI có thể viết sai, bịa API hoặc bỏ sót trường hợp. Bạn tập viết test, đọc diff và review code để kiểm chứng mọi thứ AI tạo ra, và tự chịu trách nhiệm với quyết định cuối cùng.",
@@ -40,11 +40,11 @@ export const I18N = {
     "lang": "EN", "langLabel": "Switch to English"
   },
   en: {
-    "nav.program": "Program", "nav.schedule": "Schedule", "nav.faq": "FAQ", "nav.cta": "My schedule",
+    "nav.program": "Program", "nav.schedule": "Schedule", "nav.faq": "FAQ", "nav.cta": "Sign in",
     "doc.title": "AI in Practice FA26",
     "hero.title": '<span class="accent">AI-Augmented</span> Software Engineering',
     "hero.sub": "From requirements to working software. AI assists every step; you verify and decide.",
-    "hero.cta": "See my schedule", "hero.cta2": "See the program", "hero.scroll": "Scroll to explore",
+    "hero.cta": "Sign in", "hero.cta2": "See the program", "hero.scroll": "Scroll to explore",
     "val.eyebrow": "The program", "val.title": "Learn to build software with AI as a teammate.",
     "val.h1": "More than a tool", "val.p1": "Bring AI into every step of the process: requirements, design, coding and testing. The goal is knowing where AI helps, not memorising one tool.",
     "val.h2": "AI suggests, you decide", "val.p2": "AI can be wrong, invent APIs or miss edge cases. You practise writing tests, reading diffs and reviewing code to verify everything it produces, and you own the final call.",

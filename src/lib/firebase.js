@@ -30,7 +30,7 @@ export function watchRegistrations(onData, onError) {
   return onSnapshot(q, snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))), onError);
 }
 
-// --- Đăng ký lịch học: students, schedule/config, schedule/classes, availability, assignments ---
+// --- Đăng ký lịch học: students, schedule/config, schedule/classes, availability ---
 
 const rows = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
 

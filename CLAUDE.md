@@ -22,7 +22,7 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 
 **Three pages, one Vite MPA.**
 - `index.html` → `src/main.js` (landing).
-- `admin/index.html` → `src/admin.js`: sidebar navigation; registration list; and `src/scripts/admin-schedule.js` for students, sessions/classes and class arrangement.
+- `admin/index.html` → `src/admin.js`: full-width layout, sidebar navigation (Đăng ký, Sinh viên, Buổi học, Lớp), and a `createPageHeader` (breadcrumb, title from `data-title`, `[data-meta]` summary, `[data-actions]` buttons) on every section; registration list; and `src/scripts/admin-schedule.js` for students (Sheet import in a dialog), sessions with the schedule status buttons, and classes.
 - `lich/index.html` → `src/schedule.js` (student schedule registration).
 
 `vite.config.js` sets `appType: "mpa"` (unknown paths 404 instead of falling back to the landing page) and a small middleware that redirects `/admin` and `/lich` to the trailing-slash path in dev and preview, matching the static host.
@@ -34,6 +34,7 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 **Components (`src/components/`).** Reusable UI, each a `.js` + `.css` pair; pages import the CSS from their stylesheet (`index.css`, `admin.css`; `/lich` reuses `admin.css`). New reusable UI goes here, not in `src/lib` (pure logic) or `src/scripts` (page wiring).
 - `sidebar.js`: `createSidebar({ items: [{ id, label, panel, icon }], label })` shows one panel at a time, keeps the current item in `#id`, and exposes `setBadge(id, text)` and `select(id)`. Vertical on desktop, a sticky horizontal strip under 900px. Place it and the panels inside `.sb-layout`.
 - `session-grid.js`: `sessionGrid({ ids, selected, onChange, readOnly, counts, total })`, the day × shift grid (student picker, admin session/class editors, availability heatmap).
+- `page-header.js`: `createPageHeader({ crumbs, title, meta, actions })`; moves the existing `meta`/`actions` elements in, so their ids and listeners keep working.
 - `dropdown.js`: see below.
 
 **Shared dropdown (`src/components/dropdown.js` + `dropdown.css`).** `enhanceSelects()` turns every `<select>` into an accessible custom listbox; `createDropdown({ options, value, label, placeholder, onChange, size: "sm" })` builds one in JS and returns the wrapper (`.select` is the native select). The native select stays the source of truth: its `value` setter and `focus()` are patched, so code reads/writes `select.value` and calls `select.focus()` normally. `data-placeholder` hides the `value=""` option. The listbox is attached only while open, to `<body>` or to an open `<dialog>` that contains the select (a modal dialog sits in the top layer), so re-rendered tables leave nothing behind.
@@ -46,9 +47,9 @@ There is no test suite, linter or type checker. Verify changes with `npm run bui
 - Only emails present in `students/{email}` get in (the admin pastes the list from a Sheet).
 - A student may fill `studentId` only while it is empty.
 - `schedule/config` holds `status` (`draft` → `open` → `closed` → `published`) plus `from`, `to` and `sessions`. Session ids look like `2026-11-23-am`; shift hours are constants in `src/lib/schedule.js`.
+- Students pick one shift, morning or afternoon, for the whole course (`/lich` shows two radio cards); `availability/{email}.sessionIds` stores every session of that shift. Each class is one shift (at most one class per shift), edited as a row in the admin class table (`shiftOf` in `src/lib/schedule.js`). There is no arrangement step: a student's class is the class of the shift they picked, derived on the fly in `/lich` and the admin student table.
 - `availability/{email}` is writable by its owner only while the status is `open`.
-- `schedule/classes` and the student's own `assignments/{email}` become readable only when the status is `published`.
-- `src/lib/arrange.js` is pure. It assigns each student to the class with the best session overlap, so class sizes follow what students picked (they may be uneven); ties go to the smaller class. `capacity` is an optional hard cap (null = unlimited). The admin saves the result to `assignments`.
+- `schedule/classes` becomes readable to students only when the status is `published`.
 - Zalo links pass through `safeUrl`, which accepts `https:` only.
 
 **Local testing against emulators:** in dev, `?emu` on any page connects auth (9099) and Firestore (8181) emulators; the build drops this.

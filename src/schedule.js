@@ -1,8 +1,7 @@
-// Trang /lich: sinh viên trong danh sách đăng nhập Google, bổ sung MSSV nếu thiếu, chọn các buổi đi học được,
-// rồi xem lớp được xếp khi ban tổ chức công bố. Quyền đọc/ghi do firestore.rules kiểm soát.
+// Trang /lich: sinh viên trong danh sách đăng nhập Google, bổ sung MSSV nếu thiếu, chọn học ca sáng hoặc ca chiều,
+// rồi xem lớp của ca đó khi ban tổ chức công bố. Quyền đọc/ghi do firestore.rules kiểm soát.
 import { signInWithGoogle, signOutUser, onUserChange, readDocument, watchDocument, saveDocument, fillStudentId } from "./lib/firebase.js";
-import { STATUS, SID_RE, cleanSid, parseSession, sessionLabel, safeUrl } from "./lib/schedule.js";
-import { sessionGrid } from "./components/session-grid.js";
+import { STATUS, SHIFTS, SID_RE, cleanSid, parseSession, sessionLabel, dayLabel, shiftOf as shiftOfIds, safeUrl } from "./lib/schedule.js";
 
 const $ = id => document.getElementById(id);
 const views = ["vLoading", "vLogin", "vMissing", "vSid", "vMain"];
@@ -10,24 +9,27 @@ const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 
 const COPY = {
   draft: ["Chưa mở đăng ký lịch", "Ban tổ chức sẽ mở đăng ký lịch sớm. Trang này tự cập nhật khi đăng ký mở."],
-  open: ["Chọn các buổi bạn đi học được", "Bấm vào buổi để chọn hoặc bỏ chọn. Chọn bao nhiêu buổi cũng được, và sửa được cho tới khi ban tổ chức đóng đăng ký."],
-  closed: ["Đã đóng đăng ký lịch", "Ban tổ chức đang xếp lớp dựa trên lịch rảnh của mọi người. Dưới đây là các buổi bạn đã chọn."],
-  published: ["Lớp của bạn", "Ban tổ chức đã xếp lớp. Lưu lại lịch học và vào nhóm Zalo của lớp."]
+  open: ["Chọn ca học của bạn", "Chọn học buổi sáng hoặc buổi chiều. Bạn học ca đó vào mọi ngày thứ 2 – thứ 6 trong đợt học. Đổi được cho tới khi ban tổ chức đóng đăng ký."],
+  closed: ["Đã đóng đăng ký lịch", "Ban tổ chức sẽ công bố lớp sớm. Dưới đây là ca bạn đã chọn."],
+  published: ["Lớp của bạn", "Lớp theo ca bạn đã chọn. Lưu lại lịch học và vào nhóm Zalo của lớp."]
 };
 
 let gen = 0;            // tăng mỗi lần đổi tài khoản, để bỏ kết quả của lần tải cũ
 let me = null;          // { email, name, studentId }
 let config = null;      // schedule/config
-let picked = new Set(); // buổi đang chọn trên màn hình
+let picked = new Set(); // buổi đang chọn trên màn hình: mọi buổi của ca sáng hoặc ca chiều
 let saved = new Set();  // buổi đã lưu trên Firestore
 let savedAt = null;
 let saving = false;
-let result;             // undefined = chưa tải; { cls } sau khi công bố
+let result;             // undefined = chưa tải; { classes } sau khi công bố
 let stopConfig = null;
 
 const sessions = () => config?.sessions || [];
 const valid = set => [...set].filter(id => sessions().includes(id)).sort();
 const isDirty = () => valid(picked).join() !== valid(saved).join();
+const ofShift = shift => sessions().filter(id => parseSession(id).shift === shift);
+// Ca của một tập buổi: chỉ khi mọi buổi cùng một ca (dữ liệu chọn lẻ từng buổi trước đây thì coi như chưa chọn ca)
+const shiftOf = set => shiftOfIds(valid(set));
 const pad = n => String(n).padStart(2, "0");
 const fmtTime = d => `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -114,9 +116,9 @@ async function enterMain(my) {
 }
 
 async function loadResult(my) {
-  const [cls, asg] = await Promise.all([readDocument("schedule/classes"), readDocument(`assignments/${me.email}`)]);
+  const doc = await readDocument("schedule/classes");
   if (my !== gen) return;
-  result = { cls: (cls?.classes || []).find(c => c.id === asg?.classId) || null };
+  result = { classes: doc?.classes || [] };
 }
 
 function render() {
@@ -127,24 +129,45 @@ function render() {
   $("mainSub").textContent = COPY[st][1];
   $("pickBox").hidden = st !== "open" && st !== "closed";
   $("resultBox").hidden = st !== "published";
-  if (st === "open" || st === "closed") renderGrid(st === "closed");
+  if (st === "open" || st === "closed") renderPick(st === "closed");
   if (st === "published") renderResult();
 }
 
-function renderGrid(readOnly) {
-  $("pickTools").hidden = readOnly;
+// Hai lựa chọn ca sáng / ca chiều; chọn một ca là chọn mọi buổi của ca đó trong đợt học
+function renderPick(readOnly) {
   $("saveBar").hidden = readOnly;
-  if (readOnly && !valid(saved).length) {
-    $("grid").replaceChildren(el("p", "card empty muted", "Bạn chưa chọn buổi nào trước khi đóng đăng ký. Liên hệ ban tổ chức nếu bạn vẫn muốn tham gia."));
+  const box = $("shiftPick");
+  const legend = box.querySelector("legend");
+  const current = shiftOf(readOnly ? saved : picked);
+  if (readOnly && !current) {
+    box.replaceChildren(legend, el("p", "card empty muted", "Bạn chưa chọn ca học trước khi đóng đăng ký. Liên hệ ban tổ chức nếu bạn vẫn muốn tham gia."));
     return;
   }
-  $("grid").replaceChildren(sessionGrid({ ids: sessions(), selected: readOnly ? saved : picked, readOnly, onChange: updateBar }));
+  const opts = Object.entries(SHIFTS).map(([shift, s]) => {
+    const ids = ofShift(shift);
+    if (!ids.length || (readOnly && shift !== current)) return null;
+    const label = el("label", "shift-opt");
+    const input = el("input");
+    input.type = "radio"; input.name = "shift"; input.value = shift;
+    input.checked = shift === current;
+    input.disabled = readOnly;
+    input.addEventListener("change", () => { picked = new Set(ids); updateBar(); });
+    const body = el("span", "shift-body");
+    body.append(
+      el("span", "shift-name", `Buổi ${s.name.toLowerCase()}`),
+      el("span", "shift-time", s.time),
+      el("span", "shift-days", `${ids.length} buổi · ${dayLabel(parseSession(ids[0]).date)} – ${dayLabel(parseSession(ids[ids.length - 1]).date)}`)
+    );
+    label.append(input, body);
+    return label;
+  }).filter(Boolean);
+  box.replaceChildren(legend, ...opts);
   updateBar();
 }
 
 function updateBar() {
-  const n = valid(picked).length, dirty = isDirty();
-  $("pickCount").textContent = `Đã chọn ${n} / ${sessions().length} buổi`;
+  const shift = shiftOf(picked), dirty = isDirty();
+  $("pickCount").textContent = shift ? `Ca ${SHIFTS[shift].name.toLowerCase()} · ${valid(picked).length} buổi` : "Chưa chọn ca";
   $("saveHint").textContent = saving ? "Đang lưu…"
     : dirty ? "Có thay đổi chưa lưu"
     : savedAt ? `Đã lưu lúc ${fmtTime(savedAt)}` : "Chưa lưu lần nào";
@@ -153,12 +176,14 @@ function updateBar() {
 
 function renderResult() {
   const box = $("resultBox");
-  const cls = result?.cls;
+  // Lớp của sinh viên là lớp của ca đã chọn; buổi học lấy theo ca trên lịch hiện tại
+  const shift = shiftOf(saved);
+  const cls = shift && (result?.classes || []).find(c => shiftOfIds(valid(new Set(c.sessionIds || []))) === shift);
   if (!cls) {
-    box.replaceChildren(el("h2", null, "Bạn chưa được xếp lớp"), el("p", "muted", "Liên hệ ban tổ chức để được hỗ trợ xếp lớp."));
+    box.replaceChildren(el("h2", null, "Bạn chưa có lớp"), el("p", "muted", "Bạn chưa chọn ca học trước khi đóng đăng ký. Liên hệ ban tổ chức để được hỗ trợ."));
     return;
   }
-  const ids = valid(new Set(cls.sessionIds || []));
+  const ids = valid(new Set(sessions().filter(id => parseSession(id).shift === shift)));
   const list = el("ul", "result-list");
   ids.forEach(id => {
     const { shift } = parseSession(id);
@@ -174,14 +199,6 @@ function renderResult() {
     box.append(a);
   }
 }
-
-$("pickTools").addEventListener("click", e => {
-  const kind = e.target.closest("[data-pick]")?.dataset.pick;
-  if (!kind) return;
-  if (kind === "none") picked.clear();
-  else sessions().forEach(id => { if (parseSession(id).shift === kind) picked.add(id); });
-  renderGrid(false);
-});
 
 $("saveBtn").addEventListener("click", async () => {
   const ids = valid(picked);

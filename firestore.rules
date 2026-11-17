@@ -7,7 +7,7 @@ rules_version = '2';
 //
 // Đăng ký lịch học (trang /lich): chỉ email có trong /students mới vào được, mỗi sinh viên chỉ đọc/ghi bản ghi của mình.
 // /schedule/config giữ trạng thái (draft → open → closed → published) và các buổi; /schedule/classes giữ lớp.
-// Sinh viên chỉ ghi lịch rảnh khi trạng thái là open, chỉ thấy lớp và kết quả xếp khi đã published.
+// Sinh viên chỉ ghi ca đã chọn (availability) khi trạng thái là open, chỉ thấy lớp khi đã published; lớp của sinh viên là lớp của ca đã chọn.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -111,11 +111,6 @@ service cloud.firestore {
         && request.resource.data.sessionIds is list
         && request.resource.data.sessionIds.size() <= 60
         && request.resource.data.updatedAt == request.time;
-    }
-
-    match /assignments/{email} {
-      allow get: if isAdmin() || (signedIn() && myEmail() == email && scheduleStatus() == 'published');
-      allow list, create, update, delete: if isAdmin();
     }
   }
 }

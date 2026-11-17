@@ -2,6 +2,7 @@ import { signInWithGoogle, signOutUser, onUserChange, watchRegistrations } from 
 import { isAdminEmail } from "./lib/admins.js";
 import { enhanceSelects } from "./components/dropdown.js";
 import { createSidebar } from "./components/sidebar.js";
+import { createPageHeader } from "./components/page-header.js";
 import { downloadCsv } from "./lib/csv.js";
 import { startSchedule } from "./scripts/admin-schedule.js";
 
@@ -24,18 +25,27 @@ const ICONS = {
   list: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  shuffle: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'
+  layers: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>'
 };
-const nav = createSidebar({
-  label: "Mục quản trị",
-  items: [
-    { id: "dang-ky", label: "Đăng ký", panel: "pDangKy", icon: ICONS.list },
-    { id: "sinh-vien", label: "Sinh viên", panel: "pSinhVien", icon: ICONS.users },
-    { id: "lich", label: "Lịch & lớp", panel: "pLich", icon: ICONS.calendar },
-    { id: "xep-lop", label: "Xếp lớp", panel: "pXepLop", icon: ICONS.shuffle }
-  ]
-});
+const NAV_ITEMS = [
+  { id: "dang-ky", label: "Đăng ký", panel: "pDangKy", icon: ICONS.list },
+  { id: "sinh-vien", label: "Sinh viên", panel: "pSinhVien", icon: ICONS.users },
+  { id: "buoi-hoc", label: "Buổi học", panel: "pBuoiHoc", icon: ICONS.calendar },
+  { id: "lop", label: "Lớp", panel: "pLop", icon: ICONS.layers }
+];
+const nav = createSidebar({ label: "Mục quản trị", items: NAV_ITEMS });
 $("sidebarSlot").replaceWith(nav.el);
+
+// Đầu trang của từng mục: breadcrumb Quản trị / khoá / mục, tiêu đề (data-title), dòng tóm tắt [data-meta] và nút [data-actions]
+for (const item of NAV_ITEMS) {
+  const panel = $(item.panel);
+  panel.prepend(createPageHeader({
+    crumbs: [{ label: "Quản trị", href: "/admin/" + location.search }, { label: "AI Thực Chiến FA26" }, { label: item.label }],
+    title: panel.dataset.title || item.label,
+    meta: panel.querySelector(":scope > [data-meta]"),
+    actions: panel.querySelector(":scope > [data-actions]")
+  }));
+}
 
 function filtered() {
   const q = $("q").value.trim().toLowerCase(), m = $("fMajor").value;
