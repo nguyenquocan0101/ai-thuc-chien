@@ -19,11 +19,6 @@
 #vMain > h1 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.8rem); }
 #vMain > .lead { margin: 4px 0 18px; max-width: 62ch; }
 
-/* Nút vào nhóm Zalo (màu xanh Zalo) */
-.zalo-btn { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 4px; background: #0068FF; color: #fff; text-decoration: none; }
-.zalo-btn:hover { background: #0052CC; }
-.zalo-logo { flex: none; width: 26px; height: 26px; margin-left: -6px; }
-
 /* Lịch học: một khung trắng, gom theo ngày; mỗi buổi một dòng giờ | chủ đề + phòng */
 .sched-wrap { position: relative; margin-top: 52px; }
 .sched { position: relative; z-index: 1; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 6px 22px; box-shadow: 0 10px 30px -18px rgba(140,60,15,.35); }

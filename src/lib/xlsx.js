@@ -114,7 +114,7 @@ export const workbookBlob = sheets => zip(files(sheets));
 export function downloadXlsx(name, sheets) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(workbookBlob(sheets));
-  a.download = `${name}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  a.download = `${name}.xlsx`; // tên file do nơi gọi đặt (có thể có dấu, khoảng trắng)
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

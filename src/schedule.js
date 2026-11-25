@@ -121,12 +121,12 @@ function enterMain() {
   }
 }
 
-// Có link (https) thì hiện nút và Clawd đội biển Zalo; Clawd ló đầu sau khung lịch nhường chỗ. Không có link thì ẩn hết.
+// Có link (https) thì Clawd giơ icon Zalo bò quanh màn hình (bấm vào là mở nhóm), Clawd ló đầu sau khung lịch nhường chỗ.
+// Không có link thì không hiện gì.
 function setZalo(raw) {
   const url = safeUrl(raw);
-  $("zaloBtn").hidden = !url;
   $("schedWrap").classList.toggle("has-walker", !!url);
-  if (url) { $("zaloBtn").href = url; walker.show(url); } else walker.hide();
+  if (url) walker.show(url); else walker.hide();
 }
 
 // Lịch gom theo ngày: mỗi ngày một khối, mỗi buổi một dòng (giờ, chủ đề, phòng). Chưa được xếp lớp thì báo, không đoán lớp.

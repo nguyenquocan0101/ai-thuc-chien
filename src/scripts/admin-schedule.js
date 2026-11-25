@@ -5,7 +5,6 @@
 import { watchCollection, watchDocument, writeDocuments } from "../lib/firebase.js";
 import { SID_RE, cleanSid, safeUrl } from "../lib/schedule.js";
 import { confirmDialog, wireDialog } from "../components/dialog.js";
-import { downloadCsv } from "../lib/csv.js";
 import { downloadXlsx } from "../lib/xlsx.js";
 import { CLASSES } from "./course.js";
 
@@ -78,6 +77,7 @@ function visibleStudents() {
 function renderClassTabs() {
   const n = classCounts();
   const tabs = [["", "Tất cả", students.length], ...Object.entries(CLASSES).map(([id, c]) => [id, c.short, n[id]]), ["none", "Chưa xếp lớp", n.none]];
+  syncClassExport();
   $("stuClassTabs").replaceChildren(...tabs.map(([id, label, count]) => {
     const b = el("button", "seg-btn" + (id === "none" && count ? " is-warn" : ""));
     b.type = "button"; b.dataset.tab = id;
@@ -143,71 +143,82 @@ function renderStudents() {
 const DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const dayCol = iso => { const [y, m, d] = iso.split("-").map(Number); return `${DOW[new Date(y, m - 1, d).getDay()]} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`; };
 
-// File Excel tổng: trang đầu là toàn bộ sinh viên, sau đó mỗi lớp một trang, rồi mỗi buổi của từng lớp một trang
-// (danh sách sinh viên của lớp đó, có cột trống để điểm danh). Lớp và buổi lấy từ CLASSES, sinh viên theo classId.
+// ---------- Xuất Excel ----------
+// Mỗi trang tính: { name, title, info, columns, rows } (xem src/lib/xlsx.js). STT, Kỳ, Có mặt căn giữa;
+// Có mặt và Ghi chú để trống cho điểm danh nên đặt sẵn độ rộng.
+const COL = {
+  stt: { label: "STT", center: true }, name: { label: "Họ tên" }, email: { label: "Email" }, sid: { label: "MSSV", center: true },
+  major: { label: "Ngành" }, term: { label: "Kỳ", center: true }, cls: { label: "Lớp" },
+  here: { label: "Có mặt", width: 10, center: true }, note: { label: "Ghi chú", width: 28 }
+};
+const PROGRAM = "AI Thực Chiến FA26";
+const fmtDay = iso => `${dayCol(iso)}/${iso.slice(0, 4)}`;
+const span = list => list.length ? `${fmtDay(list[0].date)} – ${fmtDay(list[list.length - 1].date)}` : "";
+const majorOf = s => ctx.majors[s.major] || s.major || "";
+const termOf = s => (s.term ? Number(s.term) : "");
+const today = () => { const d = new Date(); return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`; };
+
+// Trang danh sách của một lớp, rồi mỗi buổi một trang điểm danh (hai lớp học cùng giờ nên tên trang buổi có tên lớp ở đầu)
+function classSheets(id) {
+  const c = CLASSES[id], list = students.filter(s => s.classId === id).sort(byName);
+  return [{
+    name: c.short,
+    title: `${c.name} · Danh sách lớp`,
+    info: [["Chương trình", PROGRAM], ["Thời gian", span(c.sessions)], ["Số buổi", c.sessions.length], ["Sĩ số", list.length]],
+    columns: [COL.stt, COL.name, COL.sid, COL.email, COL.major, COL.term],
+    rows: list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, majorOf(s), termOf(s)])
+  }, ...c.sessions.map((x, i) => ({
+    name: `${c.short} B${i + 1} ${dayCol(x.date).replace("/", "-")}`,
+    title: `${c.short} · Buổi ${i + 1}: ${x.topic}`,
+    info: [["Lớp", c.name], ["Thời gian", `${fmtDay(x.date)} · ${x.from} – ${x.to}`], ["Địa điểm", x.room], ["Sĩ số", list.length]],
+    columns: [COL.stt, COL.name, COL.sid, COL.email, COL.here, COL.note],
+    rows: list.map((s, k) => [k + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
+  }))];
+}
+
+// Tên trang tính phải khác nhau và tối đa 31 ký tự: thêm số nếu trùng
+function uniqueSheets(sheets) {
+  const seen = new Map();
+  return sheets.map(sh => {
+    const base = sh.name.slice(0, 28), k = (seen.get(base) || 0) + 1;
+    seen.set(base, k);
+    return { ...sh, name: k > 1 ? `${base} ${k}` : base };
+  });
+}
+
+// File tổng: toàn bộ sinh viên, rồi trang danh sách và các trang điểm danh của từng lớp
 function exportWorkbook() {
   const n = classCounts();
-  const major = code => ctx.majors[code] || code || "";
   const order = Object.keys(CLASSES);
   const rank = s => (CLASSES[s.classId] ? order.indexOf(s.classId) : order.length); // ai chưa có lớp xếp cuối
   const sorted = [...students].sort((a, b) => rank(a) - rank(b) || byName(a, b));
-  const fmtDay = iso => `${dayCol(iso)}/${iso.slice(0, 4)}`;
-  const span = list => list.length ? `${fmtDay(list[0].date)} – ${fmtDay(list[list.length - 1].date)}` : "";
   const allSessions = Object.values(CLASSES).flatMap(c => c.sessions).sort((a, b) => a.date.localeCompare(b.date));
-
-  // Cột dùng chung; STT, Kỳ, Có mặt căn giữa; Có mặt và Ghi chú để trống cho điểm danh nên đặt sẵn độ rộng
-  const C = {
-    stt: { label: "STT", center: true }, name: { label: "Họ tên" }, email: { label: "Email" }, sid: { label: "MSSV", center: true },
-    major: { label: "Ngành" }, term: { label: "Kỳ", center: true }, cls: { label: "Lớp" },
-    here: { label: "Có mặt", width: 10, center: true }, note: { label: "Ghi chú", width: 28 }
-  };
-  const term = s => (s.term ? Number(s.term) : "");
-
-  const sheets = [{
+  downloadXlsx(`Danh sách sinh viên - ${PROGRAM} (${today()})`, uniqueSheets([{
     name: "Tổng sinh viên",
-    title: "AI Thực Chiến FA26 · Danh sách sinh viên",
+    title: `${PROGRAM} · Danh sách sinh viên`,
     info: [
       ["Tổng số sinh viên", students.length],
       ...order.map(id => [CLASSES[id].name, `${n[id]} sinh viên`]),
       ["Chưa xếp lớp", n.none],
       ["Thời gian học", span(allSessions)]
     ],
-    columns: [C.stt, C.name, C.email, C.sid, C.major, C.term, C.cls],
-    rows: sorted.map((s, i) => [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), term(s), classOf(s)?.name || "Chưa xếp lớp"])
-  }];
-  for (const [id, c] of Object.entries(CLASSES)) {
-    const list = students.filter(s => s.classId === id).sort(byName);
-    sheets.push({
-      name: c.short,
-      title: c.name,
-      info: [["Thời gian", span(c.sessions)], ["Số buổi", c.sessions.length], ["Sĩ số", list.length]],
-      columns: [C.stt, C.name, C.sid, C.email, C.major, C.term],
-      rows: list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, major(s.major), term(s)])
-    });
-    // Hai lớp học cùng giờ nên tên trang buổi học có tên lớp ở đầu
-    c.sessions.forEach((x, i) => sheets.push({
-      name: `${c.short} B${i + 1} ${dayCol(x.date).replace("/", "-")}`,
-      title: `${c.short} · Buổi ${i + 1}: ${x.topic}`,
-      info: [["Lớp", c.name], ["Thời gian", `${fmtDay(x.date)} · ${x.from} – ${x.to}`], ["Địa điểm", x.room], ["Sĩ số", list.length]],
-      columns: [C.stt, C.name, C.sid, C.email, C.here, C.note],
-      rows: list.map((s, k) => [k + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
-    }));
-  }
-
-  // Tên trang tính phải khác nhau và tối đa 31 ký tự: thêm số nếu trùng
-  const seen = new Map();
-  downloadXlsx("ai-thuc-chien-fa26", sheets.map(sh => {
-    const base = sh.name.slice(0, 28), k = (seen.get(base) || 0) + 1;
-    seen.set(base, k);
-    return { ...sh, name: k > 1 ? `${base} ${k}` : base };
-  }));
+    columns: [COL.stt, COL.name, COL.email, COL.sid, COL.major, COL.term, COL.cls],
+    rows: sorted.map((s, i) => [i + 1, s.name || "", s.email || s.id, s.studentId || "", majorOf(s), termOf(s), classOf(s)?.name || "Chưa xếp lớp"])
+  }, ...order.flatMap(classSheets)]));
 }
 
-function exportStudents() {
-  const head = ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Lớp"];
-  downloadCsv("sinh-vien-lich-hoc", head, students.map((s, i) => [
-    i + 1, s.name, s.email, s.studentId || "", ctx.majors[s.major] || s.major || "", s.term || "", classOf(s)?.name || ""
-  ]));
+// File của một lớp để gửi cho giảng viên/lớp: danh sách lớp và 6 trang điểm danh
+function exportClass(id) {
+  if (!CLASSES[id]) return;
+  downloadXlsx(`Danh sách lớp ${CLASSES[id].name} - ${PROGRAM} (${today()})`, uniqueSheets(classSheets(id)));
+}
+
+// Nút xuất trên mục Sinh viên đi theo tab lớp đang chọn
+function syncClassExport() {
+  const c = CLASSES[classTab], b = $("stuClassXlsx");
+  b.disabled = !c;
+  b.textContent = c ? `Xuất lớp ${c.short}` : "Xuất theo lớp";
+  b.title = c ? `Danh sách lớp ${c.name} và ${c.sessions.length} trang điểm danh` : "Chọn tab một lớp để xuất danh sách lớp đó";
 }
 
 // Chia lớp tự động, đều sĩ số và đều từng kỳ: gom sinh viên theo kỳ (cao xuống thấp, chưa rõ kỳ cuối), trong mỗi kỳ xếp theo tên
@@ -492,7 +503,13 @@ function renderClassPanel() {
     const view = el("button", "btn btn-ghost btn-sm", "Xem danh sách lớp");
     view.type = "button";
     view.addEventListener("click", () => { classTab = id; renderStudents(); ctx.select?.("sinh-vien"); });
-    head.append(title, view);
+    const dl = el("button", "btn btn-ghost btn-sm", "Tải danh sách lớp (.xlsx)");
+    dl.type = "button";
+    dl.title = "Danh sách lớp và các trang điểm danh từng buổi";
+    dl.addEventListener("click", () => exportClass(id));
+    const acts = el("div", "cls-acts");
+    acts.append(dl, view);
+    head.append(title, acts);
     // Link nhóm Zalo của lớp: sinh viên thấy nút vào nhóm trên trang /lich
     const zRow = el("form", "zalo-row");
     zRow.dataset.cls = id;
@@ -577,7 +594,7 @@ $("stuAll").addEventListener("change", e => {
 });
 $("stuBulkClear").addEventListener("click", () => { picked.clear(); renderStudents(); });
 $("stuBulkDel").addEventListener("click", deletePicked);
-$("stuCsv").addEventListener("click", exportStudents);
+$("stuClassXlsx").addEventListener("click", () => exportClass(classTab));
 $("stuXlsx").addEventListener("click", exportWorkbook);
 $("stuSplit").addEventListener("click", splitClasses);
 Object.entries(CLASSES).forEach(([id, c]) => $("stuClass").append(new Option(c.name, id)));
