@@ -3,7 +3,7 @@
 import { signInWithGoogle, signOutUser, onUserChange, readDocument, updateStudentInfo } from "./lib/firebase.js";
 import { MAJORS } from "./lib/majors.js";
 import { enhanceSelects } from "./components/dropdown.js";
-import { SID_RE, cleanSid } from "./lib/schedule.js";
+import { SID_RE, cleanSid, safeUrl } from "./lib/schedule.js";
 import { CLASSES } from "./scripts/course.js";
 
 const $ = id => document.getElementById(id);
@@ -108,11 +108,26 @@ function enterMain() {
   $("mainErr").textContent = "";
   renderSessions(CLASSES[me.classId]);
   showView("vMain");
+  loadZalo(gen);
 }
 
-// Mỗi buổi một dòng: số buổi, thứ, ngày, giờ, chủ đề và phòng. Chưa được xếp lớp thì báo, không đoán lớp.
+// Nút vào nhóm Zalo của lớp mình: link ở schedule/config.zalo[classId], chỉ hiện link https
+async function loadZalo(my) {
+  $("zaloBtn").hidden = true;
+  if (!CLASSES[me.classId]) return;
+  try {
+    const cfg = await readDocument("schedule/config");
+    if (my !== gen) return;
+    const url = safeUrl(cfg?.zalo?.[me.classId]);
+    $("zaloBtn").hidden = !url;
+    if (url) $("zaloBtn").href = url;
+  } catch (e) { console.warn(e.code || e); } // không đọc được thì chỉ ẩn nút, lịch vẫn hiện
+}
+
+// Lịch gom theo ngày: mỗi ngày một khối, mỗi buổi một dòng (giờ, chủ đề, phòng). Chưa được xếp lớp thì báo, không đoán lớp.
 function renderSessions(cls) {
   $("mainTitle").textContent = cls ? cls.name : "Bạn chưa được xếp lớp";
+  $("schedWrap").hidden = !cls;
   if (!cls) {
     $("mainSub").textContent = "Ban tổ chức đang xếp lớp. Trang này sẽ hiện lịch học của bạn khi xếp xong, hãy quay lại sau hoặc liên hệ ban tổ chức.";
     $("sessionList").replaceChildren();
@@ -120,13 +135,23 @@ function renderSessions(cls) {
   }
   const list = cls.sessions;
   const days = [...new Set(list.map(s => s.date))];
-  $("mainSub").textContent = `Lớp của bạn: ${list.length} buổi trong ${days.length} ngày, từ ${fmtDate(days[0])} đến ${fmtDate(days[days.length - 1], true)}. Bạn học đủ tất cả các buổi, có mặt đúng giờ và đúng phòng.`;
-  $("sessionList").replaceChildren(...list.map((s, i) => {
-    const li = el("li", s.from < "12:00" ? "is-am" : "is-pm");
-    const head = el("p", "sess-head");
-    head.append(el("b", null, `Buổi ${i + 1}`), ` · ${dowName(s.date)}, ${fmtDate(s.date, true)} · `, el("span", "sess-time", `${s.from} – ${s.to}`));
-    li.append(head, el("p", "sess-topic", s.topic), el("p", "sess-room", "Địa điểm: " + s.room));
-    return li;
+  $("mainSub").textContent = `${list.length} buổi, ${days.length} ngày, từ ${fmtDate(days[0])} đến ${fmtDate(days[days.length - 1], true)}. Bạn học đủ tất cả các buổi.`;
+  $("sessionList").replaceChildren(...days.map(date => {
+    const day = el("section", "sched-day");
+    const head = el("h2", "sched-date");
+    head.append(el("span", null, dowName(date)), el("span", "sched-dm", fmtDate(date, true)));
+    day.append(head);
+    list.forEach((s, i) => {
+      if (s.date !== date) return;
+      const row = el("div", "sched-row");
+      const time = el("p", "sched-time");
+      time.append(el("b", null, s.from), el("span", null, s.to));
+      const body = el("div", "sched-body");
+      body.append(el("p", "sched-no", `Buổi ${i + 1} · ${s.from < "12:00" ? "Sáng" : "Chiều"}`), el("p", "sched-topic", s.topic), el("p", "sched-room", s.room));
+      row.append(time, body);
+      day.append(row);
+    });
+    return day;
   }));
 }
 

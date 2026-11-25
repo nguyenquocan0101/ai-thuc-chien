@@ -111,6 +111,10 @@ td.hit { background: var(--orange-soft); color: var(--orange-deep); font-weight:
 .cls-card .head { align-items: flex-start; }
 .cls-card .table-wrap { border-radius: 12px; }
 .sess-table { min-width: 640px; }
+.zalo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 14px; }
+.zalo-k { font-size: .82rem; font-weight: 600; color: var(--muted); }
+.zalo-in { flex: 1 1 260px; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+.zalo-hint { font-size: .85rem; }
 .sess-table td { vertical-align: middle; }
 .cell-act { width: 1%; text-align: right; white-space: nowrap; }
 .cell-check { width: 1%; padding-right: 0; }

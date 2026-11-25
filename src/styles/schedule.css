@@ -18,15 +18,33 @@
 #vMain > h1 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.8rem); }
 #vMain > .lead { margin: 4px 0 18px; max-width: 62ch; }
 
-/* Lịch học: mỗi buổi một thẻ, buổi sáng viền cam, buổi chiều viền tím */
-.sess-list { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
-.sess-list li { display: grid; gap: 4px; padding: 14px 16px; border-radius: 12px; background: #FFF7F1; border-left: 4px solid var(--orange); }
-.sess-list li.is-pm { background: #F6F3FA; border-left-color: #8B7BA8; }
-.sess-list p { margin: 0; }
-.sess-head { font-size: .95rem; color: var(--muted); }
-.sess-head b { color: var(--ink); }
-.sess-time { font: 600 .95rem var(--f-mono); color: var(--orange-deep); white-space: nowrap; }
-.is-pm .sess-time { color: #5E4F7A; }
-.sess-topic { font-weight: 600; font-size: 1.08rem; color: var(--ink); }
-.sess-room { font-size: .92rem; color: var(--muted); }
-#vMain > .eyebrow { margin: 0 0 2px; font: 500 .72rem var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--orange-deep); }
+/* Nút vào nhóm Zalo (màu xanh Zalo) */
+.zalo-btn { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 4px; background: #0068FF; color: #fff; text-decoration: none; }
+.zalo-btn:hover { background: #0052CC; }
+.zalo-logo { flex: none; width: 26px; height: 26px; margin-left: -6px; }
+
+/* Lịch học: một khung trắng, gom theo ngày; mỗi buổi một dòng giờ | chủ đề + phòng */
+.sched-wrap { position: relative; margin-top: 52px; }
+.sched { position: relative; z-index: 1; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 6px 22px; box-shadow: 0 10px 30px -18px rgba(140,60,15,.35); }
+.sched-day + .sched-day { border-top: 1px solid var(--line); }
+.sched-day { padding: 16px 0 8px; }
+.sched-date { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
+.sched-dm { font: 500 .85rem var(--f-mono); color: var(--muted); }
+.sched-row { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 10px 0; }
+.sched-row + .sched-row { border-top: 1px dashed var(--line); }
+.sched-row p { margin: 0; }
+.sched-time { display: grid; align-content: start; font-family: var(--f-mono); line-height: 1.35; }
+.sched-time b { font-size: 1rem; color: var(--orange-deep); }
+.sched-time span { font-size: .82rem; color: var(--muted); }
+.sched-no { font: 500 .72rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sched-topic { font-weight: 600; font-size: 1.02rem; line-height: 1.4; color: var(--ink); margin-top: 2px !important; }
+.sched-room { margin-top: 4px !important; font-size: .9rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.sched-room::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--orange); }
+@media (max-width: 520px) { .sched { padding: 4px 16px; } .sched-row { grid-template-columns: 54px 1fr; gap: 12px; } }
+
+/* Clawd ló đầu sau mép trên của khung lịch: thò lên, thụt xuống, chớp mắt */
+.clawd { position: absolute; z-index: 0; right: 36px; top: -44px; width: 77px; height: 56px; animation: clawd-peek 6s ease-in-out infinite; transform-origin: 50% 100%; }
+.clawd-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: clawd-blink 4.5s infinite; }
+@keyframes clawd-peek { 0%, 100% { transform: translateY(14px); } 18%, 70% { transform: translateY(0); } 40% { transform: translateY(0) rotate(-4deg); } 52% { transform: translateY(0) rotate(3deg); } }
+@keyframes clawd-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@media (prefers-reduced-motion: reduce) { .clawd, .clawd-eyes { animation: none; } }

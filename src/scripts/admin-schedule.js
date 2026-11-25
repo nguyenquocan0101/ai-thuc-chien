@@ -1,8 +1,9 @@
 // Phần lớp học trên trang admin: danh sách sinh viên (nhập từ Sheet, sửa, xoá, xếp lớp, lọc theo lớp) và tổng quan hai lớp.
 // Lớp và lịch từng lớp cố định trong course.js (CLASSES); lớp của sinh viên là students/{email}.classId, chỉ admin ghi.
-// availability/{email} (ca sáng/chiều của cách chia cũ) chỉ còn được xoá kèm khi xoá sinh viên.
-import { watchCollection, writeDocuments } from "../lib/firebase.js";
-import { SID_RE, cleanSid } from "../lib/schedule.js";
+// Link nhóm Zalo của từng lớp nằm ở schedule/config.zalo ({ modern, harness }): sinh viên trong danh sách đọc được (firestore.rules),
+// chỉ admin ghi. availability/{email} (ca sáng/chiều của cách chia cũ) chỉ còn được xoá kèm khi xoá sinh viên.
+import { watchCollection, watchDocument, writeDocuments } from "../lib/firebase.js";
+import { SID_RE, cleanSid, safeUrl } from "../lib/schedule.js";
 import { confirmDialog, wireDialog } from "../components/dialog.js";
 import { downloadCsv } from "../lib/csv.js";
 import { downloadXlsx } from "../lib/xlsx.js";
@@ -19,6 +20,7 @@ let ctx;                 // { majors, registrations: () => [], setBadge, select 
 let students = [];       // students/*
 const picked = new Set(); // email các sinh viên đang được tick
 let avail = new Set();   // email có availability (cách chia cũ), để xoá kèm
+let zalo = {};           // schedule/config.zalo: id lớp → link nhóm Zalo
 let classTab = "";       // tab lọc theo lớp trên mục Sinh viên: "" = tất cả, id lớp, hoặc "none" = chưa xếp
 let importPlan = null;
 
@@ -45,7 +47,8 @@ export function startSchedule(context) {
   ctx = context;
   const stops = [
     watchCollection("students", rows => { students = rows.sort(byName); renderStudents(); renderClassPanel(); }, showErr),
-    watchCollection("availability", rows => { avail = new Set(rows.map(r => r.id)); }, showErr)
+    watchCollection("availability", rows => { avail = new Set(rows.map(r => r.id)); }, showErr),
+    watchDocument("schedule/config", c => { zalo = c?.zalo || {}; syncZalo(); }, showErr)
   ];
   return () => stops.forEach(stop => stop());
 }
@@ -152,51 +155,42 @@ function exportWorkbook() {
   const span = list => list.length ? `${fmtDay(list[0].date)} – ${fmtDay(list[list.length - 1].date)}` : "";
   const allSessions = Object.values(CLASSES).flatMap(c => c.sessions).sort((a, b) => a.date.localeCompare(b.date));
 
-  const total = {
-    name: "Tổng sinh viên",
-    head: 3 + order.length,
-    rows: [
-      ["Tổng số sinh viên", students.length],
-      ...order.map(id => [CLASSES[id].name, n[id]]),
-      ["Chưa xếp lớp", n.none],
-      ["Thời gian học", span(allSessions)],
-      [],
-      ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Lớp"],
-      ...sorted.map((s, i) => [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), s.term ? Number(s.term) : "",
-        classOf(s)?.name || "Chưa xếp lớp"])
-    ]
+  // Cột dùng chung; STT, Kỳ, Có mặt căn giữa; Có mặt và Ghi chú để trống cho điểm danh nên đặt sẵn độ rộng
+  const C = {
+    stt: { label: "STT", center: true }, name: { label: "Họ tên" }, email: { label: "Email" }, sid: { label: "MSSV", center: true },
+    major: { label: "Ngành" }, term: { label: "Kỳ", center: true }, cls: { label: "Lớp" },
+    here: { label: "Có mặt", width: 10, center: true }, note: { label: "Ghi chú", width: 28 }
   };
+  const term = s => (s.term ? Number(s.term) : "");
 
-  const sheets = [total];
+  const sheets = [{
+    name: "Tổng sinh viên",
+    title: "AI Thực Chiến FA26 · Danh sách sinh viên",
+    info: [
+      ["Tổng số sinh viên", students.length],
+      ...order.map(id => [CLASSES[id].name, `${n[id]} sinh viên`]),
+      ["Chưa xếp lớp", n.none],
+      ["Thời gian học", span(allSessions)]
+    ],
+    columns: [C.stt, C.name, C.email, C.sid, C.major, C.term, C.cls],
+    rows: sorted.map((s, i) => [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), term(s), classOf(s)?.name || "Chưa xếp lớp"])
+  }];
   for (const [id, c] of Object.entries(CLASSES)) {
     const list = students.filter(s => s.classId === id).sort(byName);
     sheets.push({
       name: c.short,
-      head: 5,
-      rows: [
-        ["Lớp", c.name],
-        ["Thời gian", span(c.sessions)],
-        ["Số buổi", c.sessions.length],
-        ["Sĩ số", list.length],
-        [],
-        ["STT", "Họ tên", "MSSV", "Email", "Ngành", "Kỳ"],
-        ...list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, major(s.major), s.term ? Number(s.term) : ""])
-      ]
+      title: c.name,
+      info: [["Thời gian", span(c.sessions)], ["Số buổi", c.sessions.length], ["Sĩ số", list.length]],
+      columns: [C.stt, C.name, C.sid, C.email, C.major, C.term],
+      rows: list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, major(s.major), term(s)])
     });
     // Hai lớp học cùng giờ nên tên trang buổi học có tên lớp ở đầu
     c.sessions.forEach((x, i) => sheets.push({
       name: `${c.short} B${i + 1} ${dayCol(x.date).replace("/", "-")}`,
-      head: 6,
-      rows: [
-        ["Lớp", c.name],
-        ["Buổi", `Buổi ${i + 1}: ${x.topic}`],
-        ["Thời gian", `${fmtDay(x.date)} · ${x.from} – ${x.to}`],
-        ["Địa điểm", x.room],
-        ["Sĩ số", list.length],
-        [],
-        ["STT", "Họ tên", "MSSV", "Email", "Có mặt", "Ghi chú"],
-        ...list.map((s, k) => [k + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
-      ]
+      title: `${c.short} · Buổi ${i + 1}: ${x.topic}`,
+      info: [["Lớp", c.name], ["Thời gian", `${fmtDay(x.date)} · ${x.from} – ${x.to}`], ["Địa điểm", x.room], ["Sĩ số", list.length]],
+      columns: [C.stt, C.name, C.sid, C.email, C.here, C.note],
+      rows: list.map((s, k) => [k + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
     }));
   }
 
@@ -482,6 +476,9 @@ async function deletePicked() {
 // Mỗi lớp một thẻ: tên, sĩ số theo kỳ, lịch 6 buổi và nút xem danh sách lớp ở mục Sinh viên
 function renderClassPanel() {
   const n = classCounts();
+  // giữ link Zalo admin đang gõ dở (chưa lưu) khi danh sách sinh viên đổi làm vẽ lại các thẻ
+  const drafts = {};
+  document.querySelectorAll("#classCards .zalo-row").forEach(f => { const v = f.querySelector("input").value; if (v !== f.dataset.saved) drafts[f.dataset.cls] = v; });
   $("classMeta").textContent = `${Object.keys(CLASSES).length} lớp học song song · ${students.length} sinh viên · ${n.none} chưa xếp lớp`;
   $("classCards").replaceChildren(...Object.entries(CLASSES).map(([id, c]) => {
     const list = students.filter(s => s.classId === id);
@@ -496,6 +493,21 @@ function renderClassPanel() {
     view.type = "button";
     view.addEventListener("click", () => { classTab = id; renderStudents(); ctx.select?.("sinh-vien"); });
     head.append(title, view);
+    // Link nhóm Zalo của lớp: sinh viên thấy nút vào nhóm trên trang /lich
+    const zRow = el("form", "zalo-row");
+    zRow.dataset.cls = id;
+    zRow.dataset.saved = zalo[id] || "";
+    const zIn = el("input", "zalo-in");
+    Object.assign(zIn, { type: "url", placeholder: "https://zalo.me/g/…", spellcheck: false });
+    zIn.setAttribute("aria-label", `Link nhóm Zalo của ${c.name}`);
+    zIn.value = drafts[id] ?? (zalo[id] || "");
+    const zSave = el("button", "btn btn-primary btn-sm", "Lưu link Zalo");
+    zSave.type = "submit";
+    const zHint = el("span", "zalo-hint muted");
+    zRow.append(el("span", "zalo-k", "Nhóm Zalo"), zIn, zSave, zHint);
+    zIn.addEventListener("input", () => zaloHint(zRow));
+    zRow.addEventListener("submit", e => { e.preventDefault(); saveZalo(zRow); });
+    zaloHint(zRow);
     const table = el("table", "sess-table");
     const thead = el("thead"), tr = el("tr");
     ["Buổi", "Ngày", "Giờ", "Chủ đề", "Địa điểm"].forEach(h => tr.append(el("th", null, h)));
@@ -510,9 +522,41 @@ function renderClassPanel() {
     table.append(thead, body);
     const wrap = el("div", "table-wrap");
     wrap.append(table);
-    card.append(head, wrap);
+    card.append(head, zRow, wrap);
     return card;
   }));
+}
+
+// Trạng thái ô link Zalo: chưa lưu / đã lưu / sai định dạng
+function zaloHint(form) {
+  const v = form.querySelector("input").value.trim(), saved = form.dataset.saved || "";
+  const bad = v && !safeUrl(v), dirty = v !== saved;
+  const hint = form.querySelector(".zalo-hint");
+  hint.textContent = bad ? "Link phải bắt đầu bằng https://" : dirty ? "Chưa lưu" : saved ? "Đã lưu, sinh viên đã thấy nút vào nhóm" : "Chưa có link";
+  hint.classList.toggle("warn", bad);
+  form.querySelector("button").disabled = bad || !dirty;
+}
+
+// Dữ liệu mới từ Firestore: ô nào chưa sửa dở (vẫn bằng giá trị đã lưu trước đó) thì nhận giá trị mới
+function syncZalo() {
+  document.querySelectorAll("#classCards .zalo-row").forEach(form => {
+    const input = form.querySelector("input"), next = zalo[form.dataset.cls] || "";
+    if (input.value.trim() === form.dataset.saved) input.value = next;
+    form.dataset.saved = next;
+    zaloHint(form);
+  });
+}
+
+async function saveZalo(form) {
+  const id = form.dataset.cls, v = form.querySelector("input").value.trim();
+  if (v && !safeUrl(v)) return zaloHint(form);
+  const btn = form.querySelector("button");
+  btn.disabled = true;
+  try {
+    // merge: chỉ đổi link của lớp này, giữ nguyên các trường khác của schedule/config
+    await writeDocuments([{ path: "schedule/config", data: { zalo: { ...zalo, [id]: v ? safeUrl(v) : "" } } }]);
+    showErr(null);
+  } catch (e) { showErr(e); zaloHint(form); }
 }
 
 // ---------- Sự kiện ----------

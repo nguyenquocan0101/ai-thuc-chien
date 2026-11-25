@@ -1,7 +1,8 @@
 // Ghi file Excel (.xlsx) nhiều trang tính, không cần thư viện ngoài.
-// Ô chữ ghi dạng inlineStr nên Excel không bao giờ hiểu nội dung thành công thức; dòng đầu in đậm và được cố định.
-// sheets: [{ name, rows: [[ô, ...], ...], head?: chỉ số dòng tiêu đề bảng (mặc định 0) }], cột tự giãn theo nội dung;
-// ô là chuỗi, số hoặc rỗng. Các dòng phía trên dòng tiêu đề (tóm tắt) có cột đầu in đậm.
+// Ô chữ ghi dạng inlineStr nên Excel không bao giờ hiểu nội dung thành công thức.
+// sheets: [{ name, title?, info?: [[nhãn, giá trị], ...], columns: [{ label, width?, center? }], rows: [[ô, ...], ...] }]
+// Bố cục mỗi trang: dòng tiêu đề lớn, các dòng thông tin "Nhãn: giá trị" (gộp ô hết bề ngang bảng), một dòng trống,
+// rồi bảng có viền với dòng tiêu đề tô màu và cố định khi cuộn. Độ rộng cột chỉ tính theo bảng, chữ quá dài thì xuống dòng.
 
 const enc = new TextEncoder();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))
@@ -10,29 +11,64 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const colName = i => { let s = ""; for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s; return s; };
 // Tên trang tính: tối đa 31 ký tự, không chứa : \ / ? * [ ]
 const sheetName = s => String(s).replace(/[:\\/?*[\]]/g, " ").slice(0, 31) || "Sheet";
+const isNum = v => typeof v === "number" && Number.isFinite(v);
 
-// Độ rộng cột theo nội dung dài nhất của cột (tính cả dòng tóm tắt và tiêu đề), để không ô nào bị cắt chữ
-function autoWidths(rows) {
-  const w = [];
-  rows.forEach(row => row.forEach((v, c) => {
-    const len = v === "" || v == null ? 0 : String(v).length;
-    w[c] = Math.max(w[c] || 0, len);
-  }));
-  return w.map(len => Math.min(Math.max(Math.ceil(len * 1.15) + 3, 6), 70));
+// Kiểu ô (thứ tự khớp cellXfs trong styles.xml)
+const ST = { title: 1, info: 2, head: 3, cell: 4, center: 5, headCenter: 6 };
+const MAX_W = 48;
+
+// Độ rộng cột theo tiêu đề và dữ liệu của bảng; cột có width cố định thì dùng luôn
+function widths(columns, rows) {
+  return columns.map((col, c) => {
+    if (col.width) return col.width;
+    const len = Math.max(String(col.label).length, ...rows.map(r => (r[c] === "" || r[c] == null ? 0 : String(r[c]).length)));
+    return Math.min(Math.max(Math.ceil(len * 1.1) + 3, 7), MAX_W);
+  });
 }
 
-function sheetXml({ rows, head = 0 }) {
-  const widths = autoWidths(rows);
-  const cols = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` : "";
-  const body = rows.map((row, r) => `<row r="${r + 1}">${row.map((v, c) => {
-    if (v === "" || v == null) return "";
-    const ref = `${colName(c)}${r + 1}`, style = r === head ? ' s="1"' : r < head && c === 0 ? ' s="2"' : "";
-    return typeof v === "number" && Number.isFinite(v)
-      ? `<c r="${ref}"${style}><v>${v}</v></c>`
-      : `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
-  }).join("")}</row>`).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="${head + 1}" topLeftCell="A${head + 2}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData></worksheet>`;
+const textCell = (ref, style, v) => `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+// "Nhãn: giá trị" với nhãn in đậm (rich text trong một ô)
+const infoCell = (ref, label, v) => `<c r="${ref}" s="${ST.info}" t="inlineStr"><is><r><rPr><b/><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">${esc(label)}: </t></r><r><rPr><sz val="11"/><rFont val="Calibri"/></rPr><t xml:space="preserve">${esc(v)}</t></r></is></c>`;
+
+function sheetXml({ title, info = [], columns, rows }) {
+  const n = Math.max(columns.length, 1), last = colName(n - 1);
+  const out = [], merges = [];
+  let r = 0;
+  const line = (cells, ht) => { r++; out.push(`<row r="${r}"${ht ? ` ht="${ht}" customHeight="1"` : ""}>${cells}</row>`); };
+  const spanAll = () => { if (n > 1) merges.push(`A${r}:${last}${r}`); };
+  if (title) { line(textCell(`A${r + 1}`, ST.title, title), 24); spanAll(); }
+  info.forEach(([label, v]) => { line(infoCell(`A${r + 1}`, label, v ?? "")); spanAll(); });
+  if (title || info.length) line("");
+  const headRow = r + 1;
+  line(columns.map((col, c) => textCell(`${colName(c)}${r + 1}`, col.center ? ST.headCenter : ST.head, col.label)).join(""), 22);
+  rows.forEach(row => {
+    line(columns.map((col, c) => {
+      const v = row[c], ref = `${colName(c)}${r + 1}`, style = col.center ? ST.center : ST.cell;
+      if (v === "" || v == null) return `<c r="${ref}" s="${style}"/>`; // ô trống vẫn có viền (cột điểm danh)
+      return isNum(v) ? `<c r="${ref}" s="${style}"><v>${v}</v></c>` : textCell(ref, style, v);
+    }).join(""));
+  });
+  const cols = `<cols>${widths(columns, rows).map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`;
+  const pane = `<pane ySplit="${headRow}" topLeftCell="A${headRow + 1}" activePane="bottomLeft" state="frozen"/>`;
+  const merge = merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join("")}</mergeCells>` : "";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/>${cols}<sheetData>${out.join("")}</sheetData>${merge}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
 }
+
+// Kiểu ô: 1 tiêu đề trang, 2 dòng thông tin, 3 tiêu đề bảng (đậm, tô màu, viền), 4 ô bảng (viền, xuống dòng), 5 ô bảng căn giữa,
+// 6 tiêu đề bảng căn giữa (cột center)
+const BORDER = '<border><left style="thin"><color rgb="FFE3D5C8"/></left><right style="thin"><color rgb="FFE3D5C8"/></right><top style="thin"><color rgb="FFE3D5C8"/></top><bottom style="thin"><color rgb="FFE3D5C8"/></bottom><diagonal/></border>';
+const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+  + `<fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="15"/><color rgb="FFC4510D"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF17141F"/><name val="Calibri"/></font><font><sz val="11"/><color rgb="FF17141F"/><name val="Calibri"/></font></fonts>`
+  + `<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE7D6"/></patternFill></fill></fills>`
+  + `<borders count="2"><border/>${BORDER}</borders><cellStyleXfs count="1"><xf/></cellStyleXfs>`
+  + `<cellXfs count="7"><xf/>`
+  + `<xf fontId="1" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>`
+  + `<xf fontId="3" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>`
+  + `<xf fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>`
+  + `<xf fontId="3" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>`
+  + `<xf fontId="3" borderId="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`
+  + `<xf fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`
+  + `</cellXfs></styleSheet>`;
 
 function files(sheets) {
   const n = sheets.length;
@@ -41,7 +77,7 @@ function files(sheets) {
     ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
     ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${esc(sheetName(s.name))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`],
     ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
-    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE7D6"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>`],
+    ["xl/styles.xml", STYLES],
     ...sheets.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s)])
   ];
   return list.map(([name, text]) => ({ name: enc.encode(name), data: enc.encode(text) }));
