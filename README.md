@@ -26,7 +26,7 @@ npm run preview   # chạy thử bản build
 | `src/admin.js` | Logic trang quản trị: đăng nhập, sidebar, danh sách đăng ký (realtime, lọc, xuất CSV) |
 | `src/scripts/admin-schedule.js` | Các mục Sinh viên, Buổi học (kèm trạng thái đăng ký lịch), Lớp của trang quản trị |
 | `src/schedule.js` | Logic trang `/lich` |
-| `src/lib/schedule.js`, `csv.js` | Ca học và nhãn ngày, xuất CSV |
+| `src/lib/schedule.js`, `csv.js` | Kiểm tra MSSV, xuất CSV |
 | `src/components/` | Component dùng lại được, mỗi cái một cặp `.js` + `.css`: `dropdown` (thay mọi `<select>`), `session-grid` (lưới ngày × ca), `sidebar` (menu trái, thành thanh ngang trên điện thoại), `page-header` (breadcrumb, tiêu đề, nút của từng mục), `dialog` (khung hộp thoại, hộp xác nhận) |
 | `src/scripts/i18n.js` | Từ điển VI/EN, `applyLang()`, nút đổi ngôn ngữ |
 | `src/scripts/course.js` | Thông tin chương trình (thời gian, phòng, hạn đăng ký…) |
@@ -66,19 +66,17 @@ Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: 
 
 ## Đăng ký lịch học
 
-Trang `/lich` dành cho sinh viên có trong danh sách. Trạng thái đăng ký lịch đổi bằng nút trên đầu mục **Buổi học** của `/admin`. Quy trình của ban tổ chức:
+Trang `/lich` dành cho sinh viên có trong danh sách. Khoá FA26 có hai lớp học song song trong tuần 13 (30/11 – 04/12/2026, thứ 2, 4, 6, mỗi ngày 2 buổi): **Modern AI Software Developer** và **Harness Engineering**. Lịch từng lớp (ngày, giờ, chủ đề, phòng) cố định trong `src/scripts/course.js` (`CLASSES`), lấy từ file lịch Excel của ban tổ chức; đổi lịch thì sửa ở đó rồi deploy.
 
-1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; sinh viên tự kiểm tra và bổ sung khi đăng nhập. Thêm, sửa (cả ca học) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng. Lọc theo kỳ bằng ô **Tất cả kỳ**; tick nhiều dòng (hoặc ô đầu bảng để chọn mọi dòng đang hiển thị) rồi bấm **Xoá N sinh viên** để xoá nhiều cùng lúc. Nút **Xuất Excel** tải một file: trang **Tổng sinh viên** (tổng số và danh sách), mỗi lớp một trang, mỗi buổi học một trang (danh sách sinh viên của buổi, có cột Có mặt để điểm danh).
-2. **Buổi học:** chọn khoảng ngày rồi bỏ những buổi nghỉ. Mỗi ngày thứ 2–6 có 2 buổi: sáng 7:30–11:30, chiều 13:00–17:00.
-3. **Lớp:** mỗi ca một lớp (mặc định Lớp sáng và Lớp chiều), mỗi lớp một dòng trong bảng: tên, ca và link nhóm Zalo. Cột Sinh viên là số người chọn ca đó.
-4. Chuyển trạng thái **Mở đăng ký**, gửi link `/lich` cho sinh viên.
-   - Sinh viên đăng nhập Google đúng email đã đăng ký.
-   - Lần đầu vào, sinh viên kiểm tra lại họ tên, MSSV, ngành, kỳ, sửa nếu sai rồi bấm Lưu thông tin (sửa lại được bằng nút Sửa thông tin).
-   - Sinh viên chọn học ca sáng hoặc ca chiều cho cả đợt, đổi được tới khi đóng.
-5. Chuyển **Đóng đăng ký** khi hết hạn. Mục **Sinh viên** cho biết ai học ca nào, ai chưa chọn.
-6. Chuyển **Công bố lớp**. Không cần xếp lớp: sinh viên vào lớp của ca đã chọn và thấy các buổi học cùng link Zalo của lớp. Ai chưa chọn ca thì không có lớp.
+1. **Sinh viên:** bấm **Nhập từ Google Sheet** và dán danh sách (copy cả dòng tiêu đề, cần cột Email). MSSV trống được lấy từ đơn đăng ký nếu có; sinh viên tự kiểm tra và bổ sung khi đăng nhập. Thêm, sửa (cả lớp) hoặc xoá từng sinh viên bằng nút **Thêm sinh viên** và các nút Sửa, Xoá trên mỗi dòng. Lọc theo kỳ bằng ô **Tất cả kỳ**; tick nhiều dòng (hoặc ô đầu bảng để chọn mọi dòng đang hiển thị) rồi bấm **Xoá N sinh viên** để xoá nhiều cùng lúc.
+2. **Xếp lớp:** bấm **Chia lớp tự động**. Hai lớp chia đều sĩ số và chia đều từng kỳ: trong mỗi kỳ, sinh viên xếp theo tên rồi chia xen kẽ hai lớp. Kỳ 8 và 9 nghiêng về Modern AI (kỳ đó lẻ người thì Modern AI hơn 1); các kỳ khác bắt đầu từ lớp đang ít người hơn để tổng hai lớp cân lại. Hộp xác nhận cho biết sĩ số và số người từng kỳ ở mỗi lớp. Chia lại sẽ ghi đè lớp đã sửa tay. Chuyển từng người bằng nút Sửa, hoặc tick nhiều dòng rồi bấm **Chuyển sang Modern AI / Harness**. Các tab **Tất cả / Modern AI / Harness / Chưa xếp lớp** trên bảng lọc theo lớp, kèm sĩ số.
+3. Gửi link `/lich` cho sinh viên. Sinh viên đăng nhập Google đúng email đã đăng ký; lần đầu vào thì kiểm tra lại họ tên, MSSV, ngành, kỳ (sửa lại được bằng nút Sửa thông tin), rồi thấy lịch 6 buổi của lớp mình. Ai chưa được xếp lớp thấy thông báo "Bạn chưa được xếp lớp".
+4. Mục **Lớp** cho xem từng lớp: sĩ số theo kỳ và lịch 6 buổi; nút **Xem danh sách lớp** mở mục Sinh viên đã lọc theo lớp đó.
+5. **Xuất Excel** tải một file: trang **Tổng sinh viên**, mỗi lớp một trang, rồi mỗi buổi của từng lớp một trang (thông tin buổi, danh sách lớp, cột Có mặt để điểm danh).
 
-Dữ liệu nằm ở `students/{email}`, `schedule/config` (trạng thái và các buổi), `schedule/classes`, `availability/{email}` (các buổi của ca sinh viên chọn). Không có backend: `firestore.rules` quyết định ai đọc ghi được gì.
+Cách làm cũ (chọn ca sáng/chiều, trạng thái mở/đóng/công bố, `schedule/config`, `schedule/classes`, `availability/{email}`) đã gỡ khỏi giao diện; dữ liệu và rules của nó vẫn còn trên Firestore, khi xoá sinh viên thì `availability` của người đó được xoá kèm.
+
+Dữ liệu nằm ở `students/{email}` (`classId` là `modern` hoặc `harness`, chỉ admin ghi được). Không có backend: `firestore.rules` quyết định ai đọc ghi được gì.
 
 Chạy thử không đụng dữ liệu thật bằng Firebase Emulator:
 

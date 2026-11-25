@@ -11,14 +11,14 @@ let fbMod = null;
 
 Object.assign(I18N.vi, {
   "r.ctaT": "Đã chốt danh sách. Xem lịch học của bạn",
-  "r.ctaP": "Bạn có tên trong danh sách học viên? Đăng nhập Google bằng đúng email đã dùng để đăng ký để chọn buổi rảnh và xem lớp của mình.",
-  "s.step1": "Đăng nhập bằng email đã đăng ký", "s.step2": "Chọn các buổi bạn rảnh khi lịch mở", "s.step3": "Xem lớp, buổi học và nhóm Zalo",
+  "r.ctaP": "Bạn có tên trong danh sách học viên? Đăng nhập Google bằng đúng email đã dùng để đăng ký để xem lịch 6 buổi học, giờ học và phòng học.",
+  "s.step1": "Đăng nhập bằng email đã đăng ký", "s.step2": "Kiểm tra lại thông tin của bạn", "s.step3": "Xem ngày, giờ, chủ đề và phòng từng buổi",
   "s.go": "Đăng nhập Google, xem lịch", "s.signing": "Đang chờ bạn đăng nhập…", "s.going": "Đang mở lịch học của bạn…",
 });
 Object.assign(I18N.en, {
   "r.ctaT": "The list is final. See your schedule",
-  "r.ctaP": "On the participant list? Sign in with Google using the email you registered with to pick your free sessions and see your class.",
-  "s.step1": "Sign in with your registered email", "s.step2": "Pick your free sessions when it opens", "s.step3": "See your class, sessions and Zalo group",
+  "r.ctaP": "On the participant list? Sign in with Google using the email you registered with to see your 6 sessions, times and rooms.",
+  "s.step1": "Sign in with your registered email", "s.step2": "Check your details", "s.step3": "See the date, time, topic and room of each session",
   "s.go": "Sign in with Google", "s.signing": "Waiting for you to sign in…", "s.going": "Opening your schedule…",
 });
 

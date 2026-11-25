@@ -1,46 +1,37 @@
-// Phần đăng ký lịch học trên trang admin: danh sách sinh viên, buổi học (kèm trạng thái đăng ký lịch) và lớp.
-// Dữ liệu: students/{email}, schedule/config, schedule/classes, availability/{email}.
-// Mỗi sinh viên chọn một ca (sáng hoặc chiều) cho cả đợt, mỗi ca có đúng một lớp: lớp của sinh viên là lớp của ca đã chọn.
-import { watchCollection, watchDocument, saveDocument, writeDocuments } from "../lib/firebase.js";
-import { STATUS, SHIFTS, SID_RE, cleanSid, parseSession, weekdaySessions, shiftOf, safeUrl } from "../lib/schedule.js";
-import { sessionGrid } from "../components/session-grid.js";
-import { createDropdown } from "../components/dropdown.js";
+// Phần lớp học trên trang admin: danh sách sinh viên (nhập từ Sheet, sửa, xoá, xếp lớp, lọc theo lớp) và tổng quan hai lớp.
+// Lớp và lịch từng lớp cố định trong course.js (CLASSES); lớp của sinh viên là students/{email}.classId, chỉ admin ghi.
+// availability/{email} (ca sáng/chiều của cách chia cũ) chỉ còn được xoá kèm khi xoá sinh viên.
+import { watchCollection, writeDocuments } from "../lib/firebase.js";
+import { SID_RE, cleanSid } from "../lib/schedule.js";
 import { confirmDialog, wireDialog } from "../components/dialog.js";
 import { downloadCsv } from "../lib/csv.js";
 import { downloadXlsx } from "../lib/xlsx.js";
+import { CLASSES } from "./course.js";
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase().trim();
+const fold = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().trim();
 const EMAIL_RE = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;
-const DEFAULT_RANGE = { from: "2026-11-23", to: "2026-12-04" }; // tuần 12–13
+// Kỳ 8, 9: khi số người của kỳ đó lẻ, người dư vào Modern AI
+const LEAN_MODERN_TERMS = new Set([8, 9]);
 
-let ctx;                 // { majors, registrations: () => [] }
+let ctx;                 // { majors, registrations: () => [], setBadge, select }
 let students = [];       // students/*
-const picked = new Set(); // email các sinh viên đang được tick để xoá nhiều
-let config = null;       // schedule/config (null = chưa có)
-let classes = [];        // schedule/classes.classes đã lưu
-let avail = new Map();   // email → sessionIds
-let availAt = new Map(); // email → lúc sinh viên lưu ca (Timestamp)
-let loaded = new Set();  // các nguồn đã tải xong lần đầu
-let sessDraft = null;    // { from, to, off: Set } đang sửa
-let classDraft = null;   // [{ id, name, shift, zalo }] đang sửa; buổi của lớp = mọi buổi của ca đó
-let classEdited = false; // admin đã sửa bản nháp lớp (khi đó dữ liệu mới không ghi đè lên)
+const picked = new Set(); // email các sinh viên đang được tick
+let avail = new Set();   // email có availability (cách chia cũ), để xoá kèm
+let classTab = "";       // tab lọc theo lớp trên mục Sinh viên: "" = tất cả, id lớp, hoặc "none" = chưa xếp
 let importPlan = null;
 
-const sessions = () => config?.sessions || [];
-const validIds = ids => { const have = new Set(sessions()); return (ids || []).filter(id => have.has(id)); };
-const ofShift = shift => sessions().filter(id => parseSession(id).shift === shift);
-const shiftName = shift => (SHIFTS[shift] ? `Ca ${SHIFTS[shift].name.toLowerCase()}` : "");
-const classShift = c => shiftOf(validIds(c.sessionIds));
-// Ca sinh viên đã chọn ("" = chưa chọn) và lớp tương ứng
-const shiftOfStudent = email => (avail.has(email) ? shiftOf(validIds(avail.get(email))) : "");
-const classOfStudent = email => { const sh = shiftOfStudent(email); return sh ? classes.find(c => classShift(c) === sh) : undefined; };
-const shiftCounts = () => {
-  const n = { am: 0, pm: 0, none: 0 };
-  students.forEach(s => { const sh = shiftOfStudent(s.id); n[sh in n ? sh : "none"]++; });
+// Lớp của sinh viên theo classId; undefined = chưa xếp lớp
+const classOf = s => CLASSES[s.classId];
+const classKey = s => (CLASSES[s.classId] ? s.classId : "none");
+const classCounts = () => {
+  const n = { none: 0 };
+  Object.keys(CLASSES).forEach(id => { n[id] = 0; });
+  students.forEach(s => { n[classKey(s)]++; });
   return n;
 };
+const termNum = s => Number(s.term) || 0;
 const byName = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "vi") || a.id.localeCompare(b.id);
 
 function showErr(e) {
@@ -52,13 +43,9 @@ function showErr(e) {
 
 export function startSchedule(context) {
   ctx = context;
-  loaded = new Set();
-  const done = name => { loaded.add(name); };
   const stops = [
-    watchCollection("students", rows => { students = rows.sort(byName); done("students"); renderStudents(); renderClasses(false); }, showErr),
-    watchDocument("schedule/config", c => { config = c; done("config"); onConfig(); }, showErr),
-    watchDocument("schedule/classes", c => { classes = c?.classes || []; done("classes"); onClasses(); }, showErr),
-    watchCollection("availability", rows => { avail = new Map(rows.map(r => [r.id, r.sessionIds || []])); availAt = new Map(rows.map(r => [r.id, r.updatedAt])); done("avail"); renderStudents(); classStats(); }, showErr)
+    watchCollection("students", rows => { students = rows.sort(byName); renderStudents(); renderClassPanel(); }, showErr),
+    watchCollection("availability", rows => { avail = new Set(rows.map(r => r.id)); }, showErr)
   ];
   return () => stops.forEach(stop => stop());
 }
@@ -81,7 +68,20 @@ function renderTermFilter() {
 
 function visibleStudents() {
   const q = fold($("stuQ").value), term = $("stuTerm").value;
-  return students.filter(s => (!term || (s.term || "none") === term) && (!q || fold([s.name, s.email, s.studentId].join(" ")).includes(q)));
+  return students.filter(s => (!classTab || classKey(s) === classTab) && (!term || (s.term || "none") === term) && (!q || fold([s.name, s.email, s.studentId].join(" ")).includes(q)));
+}
+
+// Tab lọc theo lớp: Tất cả, từng lớp, Chưa xếp lớp, kèm sĩ số
+function renderClassTabs() {
+  const n = classCounts();
+  const tabs = [["", "Tất cả", students.length], ...Object.entries(CLASSES).map(([id, c]) => [id, c.short, n[id]]), ["none", "Chưa xếp lớp", n.none]];
+  $("stuClassTabs").replaceChildren(...tabs.map(([id, label, count]) => {
+    const b = el("button", "seg-btn" + (id === "none" && count ? " is-warn" : ""));
+    b.type = "button"; b.dataset.tab = id;
+    b.setAttribute("aria-pressed", String(classTab === id));
+    b.append(el("span", null, label), el("span", "seg-n", String(count)));
+    return b;
+  }));
 }
 
 function renderBulk(list) {
@@ -89,6 +89,7 @@ function renderBulk(list) {
   $("stuBulk").hidden = n === 0;
   $("stuBulkCount").textContent = `Đã chọn ${n} sinh viên`;
   $("stuBulkDel").textContent = `Xoá ${n} sinh viên`;
+  document.querySelectorAll("#stuBulk [data-move]").forEach(b => { b.textContent = `Chuyển sang ${CLASSES[b.dataset.move].short}`; });
   const shown = list.filter(s => picked.has(s.id)).length;
   $("stuAll").checked = list.length > 0 && shown === list.length;
   $("stuAll").indeterminate = shown > 0 && shown < list.length;
@@ -97,11 +98,11 @@ function renderBulk(list) {
 
 function renderStudents() {
   renderTermFilter();
+  renderClassTabs();
   [...picked].forEach(id => { if (!students.some(s => s.id === id)) picked.delete(id); });
   const list = visibleStudents();
   $("stuRows").replaceChildren(...list.map((s, i) => {
     const tr = el("tr");
-    const sh = shiftOfStudent(s.id);
     const check = el("input");
     check.type = "checkbox"; check.dataset.id = s.id; check.checked = picked.has(s.id);
     check.setAttribute("aria-label", `Chọn ${s.name || s.email}`);
@@ -111,7 +112,7 @@ function renderStudents() {
     tr.classList.toggle("is-picked", check.checked);
     const cells = [
       [String(i + 1), "mono"], [s.name], [s.email], [s.studentId || "Thiếu", s.studentId ? "mono" : "mono miss"],
-      [s.term ? "Kỳ " + s.term : "—", "mono"], [SHIFTS[sh]?.name || "Chưa chọn", sh ? "" : "miss"], [classOfStudent(s.id)?.name || "—"]
+      [s.term ? "Kỳ " + s.term : "—", "mono"], [classOf(s)?.short || "Chưa xếp lớp", classOf(s) ? "" : "miss"]
     ];
     cells.forEach(([v, cls]) => tr.append(el("td", cls || "", v || "—")));
     const act = el("td", "cell-act");
@@ -125,111 +126,154 @@ function renderStudents() {
     return tr;
   }));
   ctx.setBadge?.("sinh-vien", students.length ? String(students.length) : "");
-  if (loaded.has("config") && loaded.has("classes")) renderBadges();
+  ctx.setBadge?.("lop", String(Object.keys(CLASSES).length));
   const withSid = students.filter(s => s.studentId).length;
-  const n = shiftCounts();
+  const n = classCounts();
   $("stuSummary").textContent = students.length
-    ? `${students.length} sinh viên · ${withSid} có MSSV · ${n.am} sáng · ${n.pm} chiều · ${n.none} chưa chọn ca`
+    ? `${students.length} sinh viên · ${withSid} có MSSV · ${Object.entries(CLASSES).map(([id, c]) => `${n[id]} ${c.short}`).join(" · ")} · ${n.none} chưa xếp lớp`
     : "Chưa có sinh viên nào. Nhập danh sách từ Google Sheet bên dưới.";
   renderBulk(list);
   $("stuEmpty").hidden = list.length > 0;
-  $("stuEmpty").textContent = students.length ? "Không có kết quả phù hợp." : "Chưa có sinh viên. Bấm Nhập từ Google Sheet.";
+  $("stuEmpty").textContent = students.length ? (classTab && !$("stuQ").value && !$("stuTerm").value ? "Lớp này chưa có sinh viên." : "Không có kết quả phù hợp.") : "Chưa có sinh viên. Bấm Nhập từ Google Sheet.";
 }
 
-// Giờ Việt Nam, dạng "17/11/2026 14:05"; rỗng nếu chưa có
-const fmtTs = ts => {
-  const d = ts?.toDate?.();
-  return d ? d.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) : "";
-};
 const DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const dayCol = iso => { const [y, m, d] = iso.split("-").map(Number); return `${DOW[new Date(y, m - 1, d).getDay()]} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`; };
 
-// File Excel tổng: trang đầu là toàn bộ sinh viên đăng ký, sau đó mỗi lớp một trang, mỗi buổi học một trang
-// (danh sách sinh viên của buổi đó, có cột trống để điểm danh)
+// File Excel tổng: trang đầu là toàn bộ sinh viên, sau đó mỗi lớp một trang, rồi mỗi buổi của từng lớp một trang
+// (danh sách sinh viên của lớp đó, có cột trống để điểm danh). Lớp và buổi lấy từ CLASSES, sinh viên theo classId.
 function exportWorkbook() {
-  const ids = sessions();
-  const n = shiftCounts();
+  const n = classCounts();
   const major = code => ctx.majors[code] || code || "";
-  const clsName = s => classOfStudent(s.id)?.name || "";
-  // Theo lớp rồi theo tên; ai chưa có lớp xếp cuối
-  const sorted = [...students].sort((a, b) => (!clsName(a) - !clsName(b)) || clsName(a).localeCompare(clsName(b), "vi") || byName(a, b));
-  const ofShiftStudents = shift => students.filter(s => shiftOfStudent(s.id) === shift).sort(byName);
+  const order = Object.keys(CLASSES);
+  const rank = s => (CLASSES[s.classId] ? order.indexOf(s.classId) : order.length); // ai chưa có lớp xếp cuối
+  const sorted = [...students].sort((a, b) => rank(a) - rank(b) || byName(a, b));
   const fmtDay = iso => `${dayCol(iso)}/${iso.slice(0, 4)}`;
-  const span = list => list.length ? `${fmtDay(parseSession(list[0]).date)} – ${fmtDay(parseSession(list[list.length - 1]).date)}` : "";
+  const span = list => list.length ? `${fmtDay(list[0].date)} – ${fmtDay(list[list.length - 1].date)}` : "";
+  const allSessions = Object.values(CLASSES).flatMap(c => c.sessions).sort((a, b) => a.date.localeCompare(b.date));
 
   const total = {
     name: "Tổng sinh viên",
-    head: 6,
+    head: 3 + order.length,
     rows: [
-      ["Tổng số sinh viên đăng ký", students.length],
-      ["Ca sáng", n.am],
-      ["Ca chiều", n.pm],
-      ["Chưa chọn ca", n.none],
-      ["Thời gian học", span(ids)],
+      ["Tổng số sinh viên", students.length],
+      ...order.map(id => [CLASSES[id].name, n[id]]),
+      ["Chưa xếp lớp", n.none],
+      ["Thời gian học", span(allSessions)],
       [],
-      ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Ca", "Lớp", "Chọn ca lúc"],
-      ...sorted.map((s, i) => {
-        const sh = shiftOfStudent(s.id);
-        return [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), s.term ? Number(s.term) : "",
-          SHIFTS[sh]?.name || "Chưa chọn", clsName(s), fmtTs(availAt.get(s.id))];
-      })
+      ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Lớp"],
+      ...sorted.map((s, i) => [i + 1, s.name || "", s.email || s.id, s.studentId || "", major(s.major), s.term ? Number(s.term) : "",
+        classOf(s)?.name || "Chưa xếp lớp"])
     ]
   };
 
-  const classSheets = classes.map(c => {
-    const sh = classShift(c), list = sh ? ofShiftStudents(sh) : [];
-    return {
-      name: c.name || "Lớp",
-      head: 6,
+  const sheets = [total];
+  for (const [id, c] of Object.entries(CLASSES)) {
+    const list = students.filter(s => s.classId === id).sort(byName);
+    sheets.push({
+      name: c.short,
+      head: 5,
       rows: [
-        ["Ca", SHIFTS[sh] ? `${SHIFTS[sh].name} ${SHIFTS[sh].time}` : ""],
-        ["Thời gian", span(sh ? ofShift(sh) : [])],
-        ["Số buổi", sh ? ofShift(sh).length : 0],
+        ["Lớp", c.name],
+        ["Thời gian", span(c.sessions)],
+        ["Số buổi", c.sessions.length],
         ["Sĩ số", list.length],
-        ["Nhóm Zalo", safeUrl(c.zalo) || ""],
         [],
         ["STT", "Họ tên", "MSSV", "Email", "Ngành", "Kỳ"],
         ...list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, major(s.major), s.term ? Number(s.term) : ""])
       ]
-    };
-  });
-
-  // Mỗi buổi một trang; sinh viên của buổi là những người chọn ca của buổi đó
-  const sessionSheets = ids.map(id => {
-    const { date, shift } = parseSession(id);
-    const list = ofShiftStudents(shift);
-    const cls = classes.find(c => classShift(c) === shift);
-    return {
-      name: `${dayCol(date).replace("/", "-")} ${SHIFTS[shift]?.name || shift}`,
-      head: 5,
+    });
+    // Hai lớp học cùng giờ nên tên trang buổi học có tên lớp ở đầu
+    c.sessions.forEach((x, i) => sheets.push({
+      name: `${c.short} B${i + 1} ${dayCol(x.date).replace("/", "-")}`,
+      head: 6,
       rows: [
-        ["Ngày", fmtDay(date)],
-        ["Ca", SHIFTS[shift] ? `${SHIFTS[shift].name} ${SHIFTS[shift].time}` : shift],
-        ["Lớp", cls?.name || ""],
+        ["Lớp", c.name],
+        ["Buổi", `Buổi ${i + 1}: ${x.topic}`],
+        ["Thời gian", `${fmtDay(x.date)} · ${x.from} – ${x.to}`],
+        ["Địa điểm", x.room],
         ["Sĩ số", list.length],
         [],
         ["STT", "Họ tên", "MSSV", "Email", "Có mặt", "Ghi chú"],
-        ...list.map((s, i) => [i + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
+        ...list.map((s, k) => [k + 1, s.name || "", s.studentId || "", s.email || s.id, "", ""])
       ]
-    };
-  });
+    }));
+  }
 
-  // Tên trang tính phải khác nhau: thêm số nếu trùng (vd. hai lớp cùng tên)
+  // Tên trang tính phải khác nhau và tối đa 31 ký tự: thêm số nếu trùng
   const seen = new Map();
-  const sheets = [total, ...classSheets, ...sessionSheets].map(sh => {
+  downloadXlsx("ai-thuc-chien-fa26", sheets.map(sh => {
     const base = sh.name.slice(0, 28), k = (seen.get(base) || 0) + 1;
     seen.set(base, k);
     return { ...sh, name: k > 1 ? `${base} ${k}` : base };
-  });
-  downloadXlsx("ai-thuc-chien-fa26", sheets);
+  }));
 }
 
 function exportStudents() {
-  const head = ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Ca", "Lớp"];
+  const head = ["STT", "Họ tên", "Email", "MSSV", "Ngành", "Kỳ", "Lớp"];
   downloadCsv("sinh-vien-lich-hoc", head, students.map((s, i) => [
-    i + 1, s.name, s.email, s.studentId || "", ctx.majors[s.major] || s.major || "", s.term || "",
-    SHIFTS[shiftOfStudent(s.id)]?.name || "", classOfStudent(s.id)?.name || ""
+    i + 1, s.name, s.email, s.studentId || "", ctx.majors[s.major] || s.major || "", s.term || "", classOf(s)?.name || ""
   ]));
+}
+
+// Chia lớp tự động, đều sĩ số và đều từng kỳ: gom sinh viên theo kỳ (cao xuống thấp, chưa rõ kỳ cuối), trong mỗi kỳ xếp theo tên
+// rồi chia xen kẽ hai lớp. Kỳ 8, 9 bắt đầu từ Modern AI (kỳ lẻ người thì Modern AI hơn 1); các kỳ khác bắt đầu từ lớp đang ít
+// người hơn (bằng nhau thì Modern AI) để tổng hai lớp cân lại. Xếp lại toàn bộ, ghi đè lớp đã xếp tay.
+function planSplit() {
+  const groups = new Map();
+  [...students].sort((a, b) => (termNum(b) || -1) - (termNum(a) || -1) || byName(a, b))
+    .forEach(s => { const t = termNum(s); groups.set(t, [...(groups.get(t) || []), s]); });
+  const n = { modern: 0, harness: 0 }, plan = [];
+  for (const [term, list] of groups) {
+    const first = LEAN_MODERN_TERMS.has(term) || n.modern <= n.harness ? "modern" : "harness";
+    const second = first === "modern" ? "harness" : "modern";
+    list.forEach((s, i) => { const id = i % 2 ? second : first; n[id]++; plan.push({ s, classId: id, term }); });
+  }
+  return plan;
+}
+
+async function splitClasses() {
+  if (!students.length) return;
+  const plan = planSplit();
+  const count = id => plan.filter(p => p.classId === id).length;
+  // "Kỳ 9: 3 Modern AI, 2 Harness" cho từng kỳ
+  const terms = [...new Set(plan.map(p => p.term))];
+  const byTerm = terms.map(t => {
+    const of = id => plan.filter(p => p.term === t && p.classId === id).length;
+    return `${t ? "Kỳ " + t : "Chưa rõ kỳ"}: ${of("modern")} ${CLASSES.modern.short}, ${of("harness")} ${CLASSES.harness.short}`;
+  }).join("; ");
+  const changed = plan.filter(p => p.s.classId !== p.classId);
+  const manual = students.filter(s => CLASSES[s.classId]).length;
+  const ok = await confirmDialog({
+    title: "Chia lớp tự động?",
+    message: `${CLASSES.modern.name}: ${count("modern")} sinh viên. ${CLASSES.harness.name}: ${count("harness")} sinh viên. `
+      + `Mỗi kỳ chia đều hai lớp, kỳ 8 và 9 nghiêng về Modern AI. ${byTerm}. ${changed.length} sinh viên sẽ đổi lớp`
+      + (manual ? `; lớp đã xếp trước đó của ${manual} sinh viên bị ghi đè.` : ".")
+      + " Sau đó vẫn chuyển từng người được bằng nút Sửa hoặc tick rồi Chuyển sang.",
+    confirmLabel: changed.length ? `Xếp lớp cho ${changed.length} sinh viên` : "Đồng ý"
+  });
+  if (!ok || !changed.length) return;
+  $("stuSplit").disabled = true;
+  try {
+    await writeDocuments(changed.map(p => ({ path: `students/${p.s.id}`, data: { classId: p.classId } })));
+    showErr(null);
+  } catch (e) { showErr(e); } finally { $("stuSplit").disabled = false; }
+}
+
+// Chuyển các sinh viên đang tick sang một lớp
+async function movePicked(classId) {
+  const list = students.filter(s => picked.has(s.id) && s.classId !== classId);
+  if (!list.length) { picked.clear(); renderStudents(); return; }
+  const btns = document.querySelectorAll("#stuBulk [data-move]");
+  btns.forEach(b => { b.disabled = true; });
+  try {
+    await writeDocuments(list.map(s => ({ path: `students/${s.id}`, data: { classId } })));
+    picked.clear();
+    showErr(null);
+  } catch (e) { showErr(e); } finally {
+    btns.forEach(b => { b.disabled = false; });
+    renderStudents();
+  }
 }
 
 // Nhận cột theo tiêu đề (bỏ dấu): "Họ tên", "Email", "MSSV", "Ngành", "Kỳ". "Đăng ký lúc" không bị nhận nhầm là cột kỳ.
@@ -347,7 +391,7 @@ function openStudentForm(s) {
   f.elements.studentId.value = s?.studentId || "";
   f.elements.term.value = s?.term || "";
   $("stuMajor").value = s?.major || "";
-  $("stuShift").value = s ? shiftOfStudent(s.id) : "";
+  $("stuClass").value = CLASSES[s?.classId] ? s.classId : "";
   $("stuFormErr").textContent = "";
   $("stuFormSave").disabled = false;
   $("stuDialog").showModal();
@@ -362,7 +406,6 @@ function studentFormProblem(v) {
   const owner = v.studentId && students.find(s => s.studentId === v.studentId && s.id !== v.email);
   if (owner) return ["studentId", `MSSV này đang thuộc về ${owner.email}.`];
   if (v.term && !/^[1-9]$/.test(v.term)) return ["term", "Kỳ là số từ 1 đến 9."];
-  if (v.shift && !ofShift(v.shift).length) return ["shift", "Chưa có buổi học nào của ca này. Lưu buổi học trước."];
   return null;
 }
 
@@ -375,7 +418,7 @@ async function saveStudentForm(e) {
     studentId: cleanSid(f.elements.studentId.value),
     term: f.elements.term.value.trim(),
     major: $("stuMajor").value,
-    shift: $("stuShift").value
+    classId: $("stuClass").value
   };
   f.querySelectorAll("[aria-invalid]").forEach(i => i.removeAttribute("aria-invalid"));
   const problem = studentFormProblem(v);
@@ -386,12 +429,7 @@ async function saveStudentForm(e) {
     if (input?.tagName === "INPUT") { input.setAttribute("aria-invalid", "true"); input.focus(); }
     return;
   }
-  const ops = [{ path: `students/${v.email}`, data: { name: v.name, email: v.email, studentId: v.studentId, major: v.major, term: v.term } }];
-  // Ca do admin đặt: ghi lịch của sinh viên thành mọi buổi của ca đó; "Chưa chọn" thì xoá
-  if (v.shift !== shiftOfStudent(v.email)) {
-    if (v.shift) ops.push({ path: `availability/${v.email}`, data: { sessionIds: ofShift(v.shift) } });
-    else if (avail.has(v.email)) ops.push({ path: `availability/${v.email}`, data: null });
-  }
+  const ops = [{ path: `students/${v.email}`, data: { name: v.name, email: v.email, studentId: v.studentId, major: v.major, term: v.term, classId: v.classId } }];
   $("stuFormSave").disabled = true;
   try {
     await writeDocuments(ops);
@@ -406,7 +444,7 @@ async function saveStudentForm(e) {
 async function deleteStudent(s) {
   const ok = await confirmDialog({
     title: "Xoá sinh viên?",
-    message: `${s.name || s.email} (${s.email}) sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa. Ca đã chọn cũng bị xoá.`,
+    message: `${s.name || s.email} (${s.email}) sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa.`,
     confirmLabel: "Xoá", danger: true
   });
   if (!ok) return;
@@ -421,7 +459,7 @@ async function deletePicked() {
   const names = list.slice(0, 5).map(s => s.name || s.email).join(", ") + (list.length > 5 ? ` và ${list.length - 5} người khác` : "");
   const ok = await confirmDialog({
     title: `Xoá ${list.length} sinh viên?`,
-    message: `${names} sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa. Ca đã chọn cũng bị xoá. Không hoàn tác được.`,
+    message: `${names} sẽ bị xoá khỏi danh sách, không đăng nhập trang lịch học được nữa. Không hoàn tác được.`,
     confirmLabel: `Xoá ${list.length} sinh viên`, danger: true
   });
   if (!ok) return;
@@ -439,234 +477,42 @@ async function deletePicked() {
   }
 }
 
-// ---------- Trạng thái + buổi học ----------
-
-function onConfig() {
-  const st = config?.status || "draft";
-  renderStatus(st);
-  renderBadges();
-  if (!sessDraft || !sessDirty()) { sessDraft = null; renderSessions(); }
-  if (!classEdited) classDraft = null; // buổi học đổi: dựng lại lớp theo buổi mới
-  renderClasses(false);
-  renderStudents();
-}
-
-function sessBase() {
-  if (sessDraft) return sessDraft;
-  const from = config?.from || DEFAULT_RANGE.from, to = config?.to || DEFAULT_RANGE.to;
-  const have = new Set(config ? sessions() : weekdaySessions(from, to));
-  sessDraft = { from, to, off: new Set(weekdaySessions(from, to).filter(id => !have.has(id))) };
-  return sessDraft;
-}
-const draftSessions = () => { const d = sessBase(); return weekdaySessions(d.from, d.to).filter(id => !d.off.has(id)); };
-const sessDirty = () => !config || draftSessions().join() !== sessions().join() || sessDraft.from !== config.from || sessDraft.to !== config.to;
-
-function renderSessions() {
-  const d = sessBase();
-  $("dFrom").value = d.from;
-  $("dTo").value = d.to;
-  const all = weekdaySessions(d.from, d.to);
-  const on = new Set(all.filter(id => !d.off.has(id)));
-  $("sessGrid").replaceChildren(all.length
-    ? sessionGrid({ ids: all, selected: on, onChange: sel => { d.off = new Set(all.filter(id => !sel.has(id))); sessHint(); } })
-    : el("p", "muted", "Khoảng ngày không có ngày thứ 2–6 nào."));
-  sessHint();
-}
-
-function sessHint() {
-  const ids = draftSessions();
-  const days = new Set(ids.map(id => parseSession(id).date)).size;
-  const dirty = sessDirty();
-  $("sessHint").textContent = `${ids.length} buổi trong ${days} ngày` + (dirty ? " · chưa lưu" : " · đã lưu");
-  $("sessSave").disabled = !dirty || !ids.length;
-}
-
-function onRange() {
-  const d = sessBase();
-  const from = $("dFrom").value, to = $("dTo").value;
-  if (!from || !to || from > to) { $("sessHint").textContent = "Ngày bắt đầu phải trước ngày kết thúc."; $("sessSave").disabled = true; return; }
-  d.from = from; d.to = to;
-  renderSessions();
-}
-
-async function saveSessions() {
-  const d = sessBase();
-  const ids = draftSessions();
-  $("sessSave").disabled = true;
-  try {
-    await saveDocument("schedule/config", { status: config?.status || "draft", from: d.from, to: d.to, sessions: ids });
-    sessDraft = null;
-    showErr(null);
-  } catch (e) { showErr(e); sessHint(); }
-}
-
-// Trạng thái đăng ký lịch trên đầu trang Buổi học: dòng trạng thái và nút sang bước tiếp theo (kèm nút quay lại khi cần)
-const STATUS_STEPS = {
-  draft: [["open", "Mở đăng ký", true]],
-  open: [["closed", "Đóng đăng ký", true]],
-  closed: [["open", "Mở lại", false], ["published", "Công bố lớp", true]],
-  published: [["closed", "Huỷ công bố", false]]
-};
-function renderStatus(st) {
-  const pill = el("span", "status-pill", STATUS[st]);
-  pill.dataset.s = st;
-  const dd = iso => (iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "");
-  const range = config?.from && config?.to ? ` · ${dd(config.from)} – ${dd(config.to)}/${config.to.slice(0, 4)}` : "";
-  $("sessMeta").replaceChildren(pill, document.createTextNode(range));
-  $("statusActions").replaceChildren(...STATUS_STEPS[st].map(([next, label, primary]) => {
-    const b = el("button", primary ? "btn btn-primary" : "btn btn-ghost", label);
-    b.type = "button";
-    b.addEventListener("click", () => { b.disabled = true; changeStatus(next); });
-    return b;
-  }));
-}
-
-async function changeStatus(status) {
-  const prev = config?.status || "draft";
-  const reject = msg => { $("schErr").textContent = msg; onConfig(); };
-  if (!config || !sessions().length) return reject("Lưu buổi học trước khi đổi trạng thái.");
-  if (status === "published") {
-    if (!classes.length) return reject("Lưu lớp trước khi công bố.");
-    if (classDraft && classesDirty()) return reject("Lớp có thay đổi chưa lưu. Lưu ở mục Lớp trước khi công bố.");
-    const n = shiftCounts();
-    const missing = Object.keys(SHIFTS).find(sh => n[sh] && !classes.some(c => classShift(c) === sh));
-    if (missing) return reject(`Có ${n[missing]} sinh viên chọn ${shiftName(missing).toLowerCase()} nhưng chưa có lớp cho ca này.`);
-  }
-  try {
-    await saveDocument("schedule/config", { status, from: config.from, to: config.to, sessions: sessions() });
-    showErr(null);
-  } catch (e) { showErr(e); config = { ...config, status: prev }; onConfig(); }
-}
-
 // ---------- Lớp ----------
 
-const toDraft = list => list.map(c => ({ id: c.id, name: c.name || "", shift: classShift(c), zalo: c.zalo || "" }));
-const fromDraft = list => list.map(c => ({ id: c.id, name: c.name.trim(), zalo: c.zalo.trim(), sessionIds: ofShift(c.shift).sort() }));
-const classesDirty = () => JSON.stringify(fromDraft(classDraft || [])) !== JSON.stringify(fromDraft(toDraft(classes)));
-
-function defaultClasses() {
-  return [
-    { id: "c1", name: "Lớp sáng", shift: "am", zalo: "" },
-    { id: "c2", name: "Lớp chiều", shift: "pm", zalo: "" }
-  ];
-}
-
-// Dòng thông tin của cả khoá: thời gian, số buổi, số lớp, số sinh viên; kèm số trên sidebar
-function renderBadges() {
-  const ids = sessions();
-  ctx.setBadge?.("buoi-hoc", ids.length ? String(ids.length) : "");
-  ctx.setBadge?.("lop", classes.length ? String(classes.length) : "");
-}
-
-function onClasses() {
-  renderBadges();
-  if (!classEdited || !classesDirty()) { classDraft = null; classEdited = false; }
-  renderClasses(true);
-  renderStudents();
-}
-
-// Mỗi lớp một dòng trong bảng. rebuild = false: chỉ dựng lại khi chưa có bản nháp (tránh mất con trỏ đang gõ khi dữ liệu khác cập nhật)
-function renderClasses(rebuild) {
-  if (!["students", "config", "classes"].every(k => loaded.has(k))) return;
-  const rows = $("classRows"), empty = $("classEmpty");
-  if (!sessions().length) {
-    classDraft = null;
-    rows.replaceChildren();
-    empty.textContent = "Lưu buổi học trước, rồi tạo lớp.";
-    empty.hidden = false;
-    $("classHint").textContent = ""; $("classSave").disabled = true; $("classAdd").disabled = true;
-    return;
-  }
-  if (classDraft && !rebuild) { classHint(); return; }
-  if (!classDraft) classDraft = classes.length ? toDraft(classes) : defaultClasses();
-  if (rows.contains(document.activeElement)) document.activeElement.blur();
-  rows.replaceChildren(...classDraft.map((c, i) => {
-    const tr = el("tr");
-    tr.dataset.id = c.id;
-    const cell = (node, cls) => { const td = el("td", cls); td.append(node); tr.append(td); return td; };
-    const input = (value, attrs, onInput) => {
-      const inp = el("input", "cell-input");
-      inp.size = 1; // bề rộng theo cột, không theo cỡ mặc định của input
-      Object.assign(inp, attrs);
-      inp.value = value;
-      inp.addEventListener("input", () => { onInput(inp.value); edited(); });
-      return inp;
-    };
-    cell(input(c.name, { maxLength: 60, ariaLabel: "Tên lớp" }, v => { c.name = v; }));
-    cell(createDropdown({
-      label: `Ca của ${c.name || "lớp"}`,
-      options: Object.entries(SHIFTS).map(([value, sh]) => ({ value, label: sh.name })),
-      value: c.shift, placeholder: "Chọn ca", size: "sm",
-      onChange: v => { c.shift = v; edited(); }
-    }));
-    cell(el("span", null, ""), "mono st-sess");
-    cell(el("span", null, ""), "mono st-pick");
-    cell(input(c.zalo, { type: "url", placeholder: "https://zalo.me/g/…", ariaLabel: "Link nhóm Zalo" }, v => { c.zalo = v; }));
-    const del = el("button", "btn btn-ghost btn-sm", "Xoá"); del.type = "button";
-    del.setAttribute("aria-label", `Xoá ${c.name || "lớp"}`);
-    del.addEventListener("click", () => { classDraft.splice(i, 1); classEdited = true; renderClasses(true); });
-    cell(del, "cell-act");
-    return tr;
+// Mỗi lớp một thẻ: tên, sĩ số theo kỳ, lịch 6 buổi và nút xem danh sách lớp ở mục Sinh viên
+function renderClassPanel() {
+  const n = classCounts();
+  $("classMeta").textContent = `${Object.keys(CLASSES).length} lớp học song song · ${students.length} sinh viên · ${n.none} chưa xếp lớp`;
+  $("classCards").replaceChildren(...Object.entries(CLASSES).map(([id, c]) => {
+    const list = students.filter(s => s.classId === id);
+    const byTerm = new Map();
+    list.forEach(s => { const t = termNum(s); byTerm.set(t, (byTerm.get(t) || 0) + 1); });
+    const terms = [...byTerm].sort((a, b) => (b[0] || -1) - (a[0] || -1)).map(([t, k]) => `${t ? "Kỳ " + t : "Chưa rõ kỳ"}: ${k}`).join(" · ");
+    const card = el("section", "card panel cls-card");
+    const head = el("div", "head");
+    const title = el("div");
+    title.append(el("h2", null, c.name), el("p", "muted", `${list.length} sinh viên${terms ? " · " + terms : ""}`));
+    const view = el("button", "btn btn-ghost btn-sm", "Xem danh sách lớp");
+    view.type = "button";
+    view.addEventListener("click", () => { classTab = id; renderStudents(); ctx.select?.("sinh-vien"); });
+    head.append(title, view);
+    const table = el("table", "sess-table");
+    const thead = el("thead"), tr = el("tr");
+    ["Buổi", "Ngày", "Giờ", "Chủ đề", "Địa điểm"].forEach(h => tr.append(el("th", null, h)));
+    thead.append(tr);
+    const body = el("tbody");
+    c.sessions.forEach((x, i) => {
+      const row = el("tr");
+      [[String(i + 1), "mono"], [`${dayCol(x.date)}/${x.date.slice(0, 4)}`, "mono"], [`${x.from} – ${x.to}`, "mono"], [x.topic], [x.room]]
+        .forEach(([v, cls]) => row.append(el("td", cls || "", v)));
+      body.append(row);
+    });
+    table.append(thead, body);
+    const wrap = el("div", "table-wrap");
+    wrap.append(table);
+    card.append(head, wrap);
+    return card;
   }));
-  empty.textContent = "Chưa có lớp. Bấm Thêm lớp.";
-  empty.hidden = classDraft.length > 0;
-  classHint();
-}
-
-// Số liệu trên từng dòng lớp: số buổi của ca và số sinh viên đã chọn ca đó (cũng là sĩ số của lớp)
-function classStats() {
-  if (!classDraft) return;
-  const n = shiftCounts();
-  for (const c of classDraft) {
-    const tr = $("classRows").querySelector(`tr[data-id="${c.id}"]`);
-    if (!tr) continue;
-    tr.querySelector(".st-sess").textContent = c.shift ? String(ofShift(c.shift).length) : "—";
-    tr.querySelector(".st-pick").textContent = c.shift ? String(n[c.shift]) : "—";
-  }
-}
-
-function edited() { classEdited = true; classHint(); }
-
-function classProblem() {
-  if (!classDraft.length) return "Cần ít nhất một lớp.";
-  for (const c of classDraft) {
-    const label = c.name.trim() || "Lớp chưa đặt tên";
-    if (!c.name.trim()) return "Lớp nào cũng cần tên.";
-    if (c.zalo.trim() && !safeUrl(c.zalo)) return `${label}: link Zalo phải bắt đầu bằng https://`;
-    if (!c.shift) return `${label}: chọn ca học.`;
-    if (!ofShift(c.shift).length) return `${label}: ca này chưa có buổi nào trong mục Buổi học.`;
-  }
-  const dup = Object.keys(SHIFTS).find(sh => classDraft.filter(c => c.shift === sh).length > 1);
-  if (dup) return `Mỗi ca chỉ có một lớp: ${shiftName(dup).toLowerCase()} đang có nhiều lớp.`;
-  return "";
-}
-
-function classHint() {
-  if (!classDraft) return;
-  classStats();
-  const problem = classProblem(), dirty = classesDirty() || !classes.length;
-  $("classHint").textContent = problem || `${classDraft.length} lớp · ${students.length} sinh viên` + (dirty ? " · chưa lưu" : " · đã lưu");
-  $("classHint").classList.toggle("warn", !!problem);
-  $("classSave").disabled = !!problem || !dirty;
-  $("classAdd").disabled = classDraft.length >= Object.keys(SHIFTS).length;
-}
-
-async function saveClasses() {
-  if (classProblem()) return;
-  $("classSave").disabled = true;
-  try {
-    await saveDocument("schedule/classes", { classes: fromDraft(classDraft) });
-    classDraft = null; classEdited = false;
-    showErr(null);
-  } catch (e) { showErr(e); classHint(); }
-}
-
-function addClass() {
-  const n = classDraft.reduce((m, c) => Math.max(m, Number(c.id.slice(1)) || 0), 0) + 1;
-  const free = Object.keys(SHIFTS).find(sh => !classDraft.some(c => c.shift === sh)) || "";
-  classDraft.push({ id: "c" + n, name: free ? `Lớp ${SHIFTS[free].name.toLowerCase()}` : `Lớp ${n}`, shift: free, zalo: "" });
-  classEdited = true;
-  renderClasses(true);
 }
 
 // ---------- Sự kiện ----------
@@ -689,6 +535,8 @@ $("stuBulkClear").addEventListener("click", () => { picked.clear(); renderStuden
 $("stuBulkDel").addEventListener("click", deletePicked);
 $("stuCsv").addEventListener("click", exportStudents);
 $("stuXlsx").addEventListener("click", exportWorkbook);
+$("stuSplit").addEventListener("click", splitClasses);
+Object.entries(CLASSES).forEach(([id, c]) => $("stuClass").append(new Option(c.name, id)));
 $("stuAdd").addEventListener("click", () => openStudentForm(null));
 $("stuForm").addEventListener("submit", saveStudentForm);
 $("stuForm").addEventListener("input", e => { e.target.removeAttribute("aria-invalid"); $("stuFormErr").textContent = ""; });
@@ -703,11 +551,10 @@ $("importOpen").addEventListener("click", () => { $("importBox").showModal(); $(
 wireDialog($("importBox"));
 $("importCheck").addEventListener("click", () => { importPlan = planImport($("importText").value); renderImport(); });
 $("importText").addEventListener("input", () => { if (importPlan) { importPlan = null; renderImport(); } });
-$("dFrom").addEventListener("change", onRange);
-$("dTo").addEventListener("change", onRange);
-$("sessSave").addEventListener("click", saveSessions);
-$("classAdd").addEventListener("click", addClass);
-$("classSave").addEventListener("click", saveClasses);
-window.addEventListener("beforeunload", e => {
-  if ((classEdited && classesDirty()) || (sessDraft && config && sessDirty())) e.preventDefault();
+$("stuClassTabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-tab]");
+  if (!b) return;
+  classTab = b.dataset.tab;
+  renderStudents();
 });
+$("stuBulk").addEventListener("click", e => { const b = e.target.closest("[data-move]"); if (b) movePicked(b.dataset.move); });

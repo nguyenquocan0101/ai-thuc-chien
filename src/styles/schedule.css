@@ -17,53 +17,16 @@
 .me-who .mono { color: var(--muted); margin-left: 6px; }
 #vMain > h1 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.8rem); }
 #vMain > .lead { margin: 4px 0 18px; max-width: 62ch; }
-/* Thông tin khoá khi đang mở đăng ký: chữ to, rõ */
-#vMain > .lead.intro { font-size: clamp(1.08rem, 1rem + .4vw, 1.22rem); line-height: 1.6; color: var(--ink); margin: 8px 0 20px; }
-.facts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.facts-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
-.fact-k { flex: none; width: 92px; color: var(--muted); font-size: .92em; }
-.facts-list b { color: var(--ink); }
-.fact-shifts { display: grid; gap: 2px; flex: 1 1 0; min-width: 0; }
-.fact-shifts .nowrap { white-space: nowrap; }
-.facts-list li:first-child b { color: var(--orange-deep); }
 
-/* Chọn ca: hai thẻ radio sáng / chiều */
-.shift-pick { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.shift-opt {
-  position: relative; display: flex; gap: 14px; align-items: flex-start; padding: 18px; cursor: pointer;
-  background: #fff; border: 1.5px solid var(--line); border-radius: 16px; transition: border-color .15s, background .15s, box-shadow .15s;
-}
-.shift-opt:hover { border-color: #E2CDBD; }
-/* Nút tròn tự vẽ (radio gốc của trình duyệt có vòng tối ở giữa khi tô màu) */
-.shift-opt input {
-  appearance: none; flex: none; width: 22px; height: 22px; margin: 3px 0 0; border-radius: 50%;
-  border: 2px solid #CDBFB2; background: #fff; transition: border-color .15s, background .15s, box-shadow .15s;
-}
-.shift-opt input:checked { border-color: var(--orange); background: var(--orange); box-shadow: inset 0 0 0 4px #fff; }
-.shift-opt input:focus-visible { outline: none; }
-.shift-opt:has(input:checked) { border-color: var(--orange); background: #FFF7F1; box-shadow: 0 0 0 3px var(--orange-soft); }
-.shift-opt:has(input:focus-visible) { outline: 2px solid var(--orange); outline-offset: 2px; }
-.shift-opt:has(input:disabled) { cursor: default; }
-.shift-body { display: grid; gap: 2px; }
-.shift-name { font-weight: 700; font-size: 1.3rem; }
-.shift-days { color: var(--muted); font-size: .92rem; margin-top: 4px; }
-.shift-time { font: 600 1.05rem var(--f-mono); color: var(--orange-deep); }
-.confirm-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-top: 16px; }
-.confirm-row .btn { padding: 12px 28px; font-size: 1rem; }
-.confirm-row .btn[disabled] { background: #E4DCD4; color: #8C8394; cursor: not-allowed; }
-.save-line { margin: 0 2px; flex: 1 1 260px; font-size: .92rem; color: var(--muted); }
-@media (max-width: 520px) { .confirm-row .btn { width: 100%; } }
-.save-line[data-ok="1"] { color: #17663A; }
-.save-line[data-ok="1"]::before { content: "✓ "; font-weight: 700; }
-
-.result { display: grid; gap: 6px; justify-items: start; }
-.result h2 { margin: 0; font-size: 1.15rem; }
-.result .eyebrow { margin: 0; font: 500 .72rem var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--orange-deep); }
-.result .result-name { font-size: 1.6rem; letter-spacing: -0.01em; }
-.result-list { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; width: 100%; }
-.result-list li { padding: 9px 12px; border-radius: 10px; background: #FFF7F1; border-left: 3px solid var(--orange); font-size: .95rem; }
-.result-list li.is-pm { background: #F6F3FA; border-left-color: #8B7BA8; }
-.result .btn { text-decoration: none; }
-
-.empty.card { padding: 24px; text-align: center; }
-
+/* Lịch học: mỗi buổi một thẻ, buổi sáng viền cam, buổi chiều viền tím */
+.sess-list { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+.sess-list li { display: grid; gap: 4px; padding: 14px 16px; border-radius: 12px; background: #FFF7F1; border-left: 4px solid var(--orange); }
+.sess-list li.is-pm { background: #F6F3FA; border-left-color: #8B7BA8; }
+.sess-list p { margin: 0; }
+.sess-head { font-size: .95rem; color: var(--muted); }
+.sess-head b { color: var(--ink); }
+.sess-time { font: 600 .95rem var(--f-mono); color: var(--orange-deep); white-space: nowrap; }
+.is-pm .sess-time { color: #5E4F7A; }
+.sess-topic { font-weight: 600; font-size: 1.08rem; color: var(--ink); }
+.sess-room { font-size: .92rem; color: var(--muted); }
+#vMain > .eyebrow { margin: 0 0 2px; font: 500 .72rem var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--orange-deep); }

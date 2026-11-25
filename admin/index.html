@@ -70,6 +70,7 @@
       <div class="tools" data-actions>
           <input type="search" id="stuQ" placeholder="Tìm tên, email, MSSV…" aria-label="Tìm sinh viên">
           <select id="stuTerm" aria-label="Lọc theo kỳ"><option value="">Tất cả kỳ</option></select>
+          <button class="btn btn-ghost" type="button" id="stuSplit" title="Chia đều hai lớp theo từng kỳ; kỳ 8, 9 nghiêng về Modern AI">Chia lớp tự động</button>
           <button class="btn btn-ghost" type="button" id="stuXlsx" title="Tổng sinh viên, mỗi lớp một trang, mỗi buổi học một trang">Xuất Excel</button>
           <button class="btn btn-ghost" type="button" id="stuCsv">Xuất CSV</button>
           <button class="btn btn-ghost" type="button" id="importOpen">Nhập từ Google Sheet</button>
@@ -97,7 +98,7 @@
             <label class="fld">MSSV <input name="studentId" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="SE123456"></label>
             <label class="fld">Kỳ <input name="term" type="number" min="1" max="9" inputmode="numeric"></label>
             <label class="fld">Ngành <select name="major" id="stuMajor"><option value="">Chưa rõ</option></select></label>
-            <label class="fld">Ca học <select name="shift" id="stuShift"><option value="">Chưa chọn</option><option value="am">Sáng</option><option value="pm">Chiều</option></select></label>
+            <label class="fld">Lớp <select name="classId" id="stuClass"><option value="">Chưa xếp lớp</option></select></label>
           </div>
           <p class="err" id="stuFormErr" role="alert"></p>
           <div class="modal-actions">
@@ -106,47 +107,26 @@
           </div>
         </form>
       </dialog>
+      <div class="seg" id="stuClassTabs" role="group" aria-label="Lọc theo lớp"></div>
       <div class="bulk-bar" id="stuBulk" hidden>
         <span id="stuBulkCount"></span>
         <button class="btn btn-ghost btn-sm" type="button" id="stuBulkClear">Bỏ chọn</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-move="modern">Chuyển sang Modern AI</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-move="harness">Chuyển sang Harness</button>
         <button class="btn btn-danger btn-sm" type="button" id="stuBulkDel">Xoá đã chọn</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th class="cell-check"><input type="checkbox" id="stuAll" aria-label="Chọn tất cả sinh viên đang hiển thị"></th><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Ca</th><th>Lớp</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
+          <thead><tr><th class="cell-check"><input type="checkbox" id="stuAll" aria-label="Chọn tất cả sinh viên đang hiển thị"></th><th>#</th><th>Họ tên</th><th>Email</th><th>MSSV</th><th>Kỳ</th><th>Lớp</th><th><span class="sr-only">Thao tác</span></th></tr></thead>
           <tbody id="stuRows"></tbody>
         </table>
         <p class="empty muted" id="stuEmpty" hidden></p>
       </div>
     </div>
 
-    <div class="panel-page" id="pBuoiHoc" data-title="Buổi học" hidden>
-      <p class="muted" id="sessMeta" data-meta></p>
-      <!-- Nút chuyển trạng thái đăng ký lịch, dựng theo trạng thái hiện tại -->
-      <div class="tools" id="statusActions" data-actions></div>
-      <div class="card panel">
-        <div class="range">
-          <label>Từ ngày <input type="date" id="dFrom"></label>
-          <label>Đến ngày <input type="date" id="dTo"></label>
-        </div>
-        <div id="sessGrid"></div>
-        <div class="actions"><span class="muted" id="sessHint"></span><button class="btn btn-primary" type="button" id="sessSave">Lưu buổi học</button></div>
-      </div>
-    </div>
-
     <div class="panel-page" id="pLop" data-title="Lớp học" hidden>
-      <div class="tools" data-actions><button class="btn btn-ghost" type="button" id="classAdd">Thêm lớp</button></div>
-      <div class="table-wrap">
-        <table class="cls-table">
-          <thead><tr><th>Lớp</th><th>Ca</th><th>Buổi</th><th>Sinh viên</th><th>Nhóm Zalo</th><th><span class="sr-only">Xoá</span></th></tr></thead>
-          <tbody id="classRows"></tbody>
-        </table>
-        <p class="empty muted" id="classEmpty" hidden></p>
-      </div>
-      <div class="actions">
-        <span class="muted" id="classHint"></span>
-        <button class="btn btn-primary" type="button" id="classSave">Lưu lớp</button>
-      </div>
+      <p class="muted" id="classMeta" data-meta></p>
+      <div id="classCards"></div>
     </div>
     </div>
   </section>

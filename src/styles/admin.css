@@ -1,5 +1,4 @@
 @import "../components/dropdown.css";
-@import "../components/session-grid.css";
 @import "../components/sidebar.css";
 @import "../components/page-header.css";
 @import "../components/dialog.css";
@@ -99,16 +98,20 @@ td.hit { background: var(--orange-soft); color: var(--orange-deep); font-weight:
 .range { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
 .range label, .fld { display: grid; gap: 4px; font-size: .82rem; font-weight: 600; color: var(--muted); }
 .range input, .fld input { font: inherit; font-weight: 400; color: var(--ink); padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-/* Bảng lớp: mỗi lớp một dòng, sửa ngay trong ô */
-.cls-table { min-width: 680px; }
-.cls-table td { vertical-align: middle; padding: 8px 10px; }
-.cls-table th { padding: 11px 10px; white-space: nowrap; }
-.cell-input { width: 100%; min-width: 0; font: inherit; color: var(--ink); padding: 7px 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; transition: border-color .15s, background .15s; }
-.cell-input:hover { border-color: var(--line); background: #fff; }
-.cell-input:focus { outline: none; border-color: var(--orange); background: #fff; }
-.cls-table td:nth-child(1) { min-width: 150px; }
-.cls-table td:nth-child(5) { min-width: 220px; }
-.cls-table .sm { min-width: 120px; }
+/* Tab lọc theo lớp trên mục Sinh viên */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.seg-btn { display: inline-flex; align-items: center; gap: 8px; font: 600 .88rem var(--f-body); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; }
+.seg-btn:hover { border-color: var(--orange); color: var(--ink); }
+.seg-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.seg-n { font: 600 .75rem var(--f-mono); padding: 1px 7px; border-radius: 999px; background: #F1ECE6; color: var(--muted); }
+.seg-btn[aria-pressed="true"] .seg-n { background: rgba(255,255,255,.18); color: #fff; }
+.seg-btn.is-warn .seg-n { background: #FDE4E1; color: var(--err); }
+.seg-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+/* Mục Lớp: mỗi lớp một thẻ có lịch các buổi */
+.cls-card .head { align-items: flex-start; }
+.cls-card .table-wrap { border-radius: 12px; }
+.sess-table { min-width: 640px; }
+.sess-table td { vertical-align: middle; }
 .cell-act { width: 1%; text-align: right; white-space: nowrap; }
 .cell-check { width: 1%; padding-right: 0; }
 .cell-check input { width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--orange); cursor: pointer; }
@@ -127,6 +130,6 @@ tr.is-picked td { background: #FFF4EC; }
   .panel { padding: 16px 14px; }
   .tools, .tools input { width: 100%; }
   .tools .sm, .tools .btn { flex: 1; }
-  .tools .sm { min-width: 0; }
+  .tools .sm { min-width: 0; flex-basis: 100%; }
   .who span { display: none; }
 }

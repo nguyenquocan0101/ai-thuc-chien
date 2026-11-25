@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Đăng ký lịch học · AI Thực Chiến FA26</title>
+<title>Lịch học · AI Thực Chiến FA26</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -28,7 +28,7 @@
   </section>
 
   <section class="card center" id="vLogin" hidden>
-    <h1>Đăng ký lịch học</h1>
+    <h1>Lịch học</h1>
     <p class="muted">Đăng nhập bằng đúng tài khoản Google bạn đã dùng khi đăng ký AI Thực Chiến (Gmail hoặc email @fpt.edu.vn).</p>
     <button class="btn btn-primary" type="button" id="signInBtn">Đăng nhập với Google</button>
     <p class="err" id="loginErr" role="alert"></p>
@@ -36,7 +36,7 @@
 
   <section class="card center" id="vMissing" hidden>
     <h1>Email chưa có trong danh sách</h1>
-    <p class="muted">Tài khoản <b id="missingMail"></b> không có trong danh sách sinh viên đăng ký lịch. Hãy đăng nhập đúng email bạn đã dùng khi đăng ký, hoặc liên hệ ban tổ chức.</p>
+    <p class="muted">Tài khoản <b id="missingMail"></b> không có trong danh sách lớp. Hãy đăng nhập đúng email bạn đã dùng khi đăng ký, hoặc liên hệ ban tổ chức.</p>
     <button class="btn btn-primary" type="button" id="switchBtn">Đăng nhập tài khoản khác</button>
   </section>
 
@@ -64,20 +64,10 @@
       <p class="me-who"><b id="meName"></b> <span class="mono" id="meSid"></span></p>
       <button class="btn btn-ghost btn-sm" type="button" id="infoEdit">Sửa thông tin</button>
     </div>
+    <p class="eyebrow">Lịch học của bạn</p>
     <h1 id="mainTitle"></h1>
-    <div class="muted lead" id="mainSub"></div>
-
-    <div id="pickBox" hidden>
-      <fieldset class="shift-pick" id="shiftPick">
-        <legend class="sr-only">Chọn ca học</legend>
-      </fieldset>
-      <div class="confirm-row" id="confirmRow">
-        <p class="save-line" id="saveHint" aria-live="polite"></p>
-        <button class="btn btn-primary" type="button" id="saveBtn">Xác nhận</button>
-      </div>
-    </div>
-
-    <div class="card result" id="resultBox" hidden></div>
+    <p class="muted lead" id="mainSub"></p>
+    <ul class="sess-list" id="sessionList"></ul>
     <p class="err" id="mainErr" role="alert"></p>
   </section>
 </main>
