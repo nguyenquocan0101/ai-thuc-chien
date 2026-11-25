@@ -133,6 +133,7 @@ function setZalo(raw) {
 function renderSessions(cls) {
   $("mainTitle").textContent = cls ? cls.name : "Bạn chưa được xếp lớp";
   $("schedWrap").hidden = !cls;
+  $("mainSub").hidden = !!cls; // dòng phụ chỉ dùng để báo chưa xếp lớp
   if (!cls) {
     $("mainSub").textContent = "Ban tổ chức đang xếp lớp. Trang này sẽ hiện lịch học của bạn khi xếp xong, hãy quay lại sau hoặc liên hệ ban tổ chức.";
     $("sessionList").replaceChildren();
@@ -140,7 +141,6 @@ function renderSessions(cls) {
   }
   const list = cls.sessions;
   const days = [...new Set(list.map(s => s.date))];
-  $("mainSub").textContent = `${list.length} buổi, ${days.length} ngày, từ ${fmtDate(days[0])} đến ${fmtDate(days[days.length - 1], true)}. Bạn học đủ tất cả các buổi.`;
   $("sessionList").replaceChildren(...days.map(date => {
     const day = el("section", "sched-day");
     const head = el("h2", "sched-date");
