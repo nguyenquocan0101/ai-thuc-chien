@@ -1,5 +1,5 @@
 // Clawd (chú cua pixel của Claude Code) giơ icon Zalo, bò ngang dọc mép màn hình, chân bám vào mép; bấm vào là mở nhóm Zalo.
-// Máy tính: kèm bong bóng "Zalo nè!" quay về phía giữa màn hình. Điện thoại: chỉ bò vòng (CSS ẩn bong bóng).
+// Máy tính: bong bóng "Zalo nè!" luôn hiện, quay về phía giữa màn hình. Điện thoại: bong bóng hiện 4 giây, 15 giây một lần.
 // Rê chuột hoặc focus thì dừng lại; prefers-reduced-motion thì đứng yên ở góc dưới bên phải.
 // const walker = createClawdWalker(); walker.show(url); walker.hide();
 
@@ -39,7 +39,11 @@ export function createClawdWalker() {
   const body = el.querySelector(".cw-body"), logo = el.querySelector(".cw-logo");
 
   const still = matchMedia("(prefers-reduced-motion: reduce)");
-  let raf = 0, last = 0, dist = 0, paused = false;
+  let raf = 0, last = 0, dist = 0, paused = false, talkTimer = 0, talkStart = 0;
+  const TALK_EVERY = 15000, TALK_FOR = 4000;
+
+  // Lớp is-talking chỉ có tác dụng trên màn hình hẹp (CSS); màn hình rộng thì bong bóng luôn hiện
+  const talk = () => { el.classList.add("is-talking"); setTimeout(() => el.classList.remove("is-talking"), TALK_FOR); };
 
   // Đường bò: sát bốn mép màn hình (cạnh trên là mép dưới thanh tiêu đề), theo chiều kim đồng hồ: trên → phải → dưới → trái
   function track() {
@@ -97,10 +101,15 @@ export function createClawdWalker() {
       if (!el.hidden) return;
       el.hidden = false;
       start();
+      talkStart = setTimeout(talk, 2000);
+      talkTimer = setInterval(talk, TALK_EVERY);
     },
     hide() {
       el.hidden = true;
       cancelAnimationFrame(raf);
+      clearTimeout(talkStart);
+      clearInterval(talkTimer);
+      el.classList.remove("is-talking");
     }
   };
 }

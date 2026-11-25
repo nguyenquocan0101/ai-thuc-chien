@@ -16,10 +16,16 @@
 .clawd-walker.is-still .cw-legs-a, .clawd-walker.is-still .cw-legs-b { animation: none; }
 .clawd-walker.is-still .cw-body { transition: none; }
 
-/* Bong bóng thoại (chỉ trên màn hình rộng): mặc định bên phải chú cua, sang trái khi chú ở nửa phải màn hình */
+/* Bong bóng thoại (màn hình rộng luôn hiện, màn hình hẹp hiện theo lớp is-talking): mặc định bên phải chú cua, sang trái khi chú ở nửa phải màn hình */
 .cw-bubble { position: absolute; top: 50%; left: calc(100% + 8px); transform: translateY(-50%); white-space: nowrap; padding: 7px 12px; border-radius: 14px; background: #0068FF; color: #fff; font: 600 .85rem/1.2 "Be Vietnam Pro", system-ui, sans-serif; box-shadow: 0 6px 16px -6px rgba(0,104,255,.6); pointer-events: none; }
 .cw-bubble::after { content: ""; position: absolute; top: 50%; margin-top: -6px; left: -6px; border: 6px solid transparent; border-left: 0; border-right-color: #0068FF; }
 .clawd-walker.is-right .cw-bubble { left: auto; right: calc(100% + 8px); }
 .clawd-walker.is-right .cw-bubble::after { left: auto; right: -6px; border-right: 0; border-left: 6px solid #0068FF; }
 .clawd-walker.is-paused .cw-bubble { background: #0052CC; }
-@media (max-width: 699px) { .cw-bubble { display: none; } .clawd-walker { width: 64px; height: 64px; } }
+@media (max-width: 699px) {
+  .clawd-walker { width: 64px; height: 64px; }
+  .cw-bubble { display: none; font-size: .8rem; padding: 6px 10px; }
+  .clawd-walker.is-talking .cw-bubble { display: block; animation: cw-pop .25s ease-out; }
+}
+@keyframes cw-pop { from { opacity: 0; transform: translateY(-50%) scale(.8); } }
+@media (prefers-reduced-motion: reduce) { .clawd-walker.is-talking .cw-bubble { animation: none; } }
