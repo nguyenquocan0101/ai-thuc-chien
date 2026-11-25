@@ -1,8 +1,9 @@
 // Trang /lich: sinh viên trong danh sách đăng nhập Google, kiểm tra lại thông tin, rồi xem lịch học chính thức
 // của lớp mình (admin xếp lớp vào students/{email}.classId, lịch từng lớp nằm trong course.js). Quyền do firestore.rules kiểm soát.
-import { signInWithGoogle, signOutUser, onUserChange, readDocument, updateStudentInfo } from "./lib/firebase.js";
+import { signInWithGoogle, signOutUser, onUserChange, readDocument, watchDocument, updateStudentInfo } from "./lib/firebase.js";
 import { MAJORS } from "./lib/majors.js";
 import { enhanceSelects } from "./components/dropdown.js";
+import { createClawdWalker } from "./components/clawd-walker.js";
 import { SID_RE, cleanSid, safeUrl } from "./lib/schedule.js";
 import { CLASSES } from "./scripts/course.js";
 
@@ -12,6 +13,8 @@ const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 
 let gen = 0;   // tăng mỗi lần đổi tài khoản, để bỏ kết quả của lần tải cũ
 let me = null; // { email, name, studentId, major, term, classId }
+let stopZalo = null;                // ngừng theo dõi schedule/config khi đổi tài khoản
+const walker = createClawdWalker(); // Clawd đội biển Zalo bò quanh màn hình khi lớp có link
 
 const DOW = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 const dowName = iso => { const [y, m, d] = iso.split("-").map(Number); return DOW[new Date(y, m - 1, d).getDay()]; };
@@ -29,6 +32,8 @@ function fail(e, target = "mainErr") {
 onUserChange(async user => {
   const my = ++gen;
   me = null;
+  setZalo("");
+  if (stopZalo) { stopZalo(); stopZalo = null; }
   $("who").hidden = !user;
   if (!user) { showView("vLogin"); return; }
   $("whoMail").textContent = user.email;
@@ -108,20 +113,20 @@ function enterMain() {
   $("mainErr").textContent = "";
   renderSessions(CLASSES[me.classId]);
   showView("vMain");
-  loadZalo(gen);
+  // Link nhóm Zalo của lớp mình ở schedule/config.zalo[classId]: theo dõi trực tiếp, admin lưu là sinh viên thấy ngay
+  if (!stopZalo && CLASSES[me.classId]) {
+    const my = gen;
+    stopZalo = watchDocument("schedule/config", cfg => { if (my === gen) setZalo(cfg?.zalo?.[me.classId]); },
+      e => console.warn(e.code || e)); // không đọc được thì chỉ ẩn nút, lịch vẫn hiện
+  }
 }
 
-// Nút vào nhóm Zalo của lớp mình: link ở schedule/config.zalo[classId], chỉ hiện link https
-async function loadZalo(my) {
-  $("zaloBtn").hidden = true;
-  if (!CLASSES[me.classId]) return;
-  try {
-    const cfg = await readDocument("schedule/config");
-    if (my !== gen) return;
-    const url = safeUrl(cfg?.zalo?.[me.classId]);
-    $("zaloBtn").hidden = !url;
-    if (url) $("zaloBtn").href = url;
-  } catch (e) { console.warn(e.code || e); } // không đọc được thì chỉ ẩn nút, lịch vẫn hiện
+// Có link (https) thì hiện nút và Clawd đội biển Zalo; Clawd ló đầu sau khung lịch nhường chỗ. Không có link thì ẩn hết.
+function setZalo(raw) {
+  const url = safeUrl(raw);
+  $("zaloBtn").hidden = !url;
+  $("schedWrap").classList.toggle("has-walker", !!url);
+  if (url) { $("zaloBtn").href = url; walker.show(url); } else walker.hide();
 }
 
 // Lịch gom theo ngày: mỗi ngày một khối, mỗi buổi một dòng (giờ, chủ đề, phòng). Chưa được xếp lớp thì báo, không đoán lớp.

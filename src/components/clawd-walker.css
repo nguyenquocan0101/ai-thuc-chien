@@ -1,0 +1,21 @@
+/* Clawd đội biển Zalo bò quanh màn hình (src/components/clawd-walker.js). Vị trí đặt bằng transform từ JS. */
+.clawd-walker { position: fixed; left: 0; top: 0; z-index: 50; display: block; width: 76px; height: 86px; cursor: pointer; will-change: transform; -webkit-tap-highlight-color: transparent; }
+.clawd-walker[hidden] { display: none; }
+.clawd-walker:focus-visible { outline: 2px solid #0068FF; outline-offset: 4px; border-radius: 10px; }
+.cw-art { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 6px rgba(23,20,31,.18)); animation: cw-bob .5s steps(2) infinite; }
+.cw-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: cw-blink 4s infinite; }
+.cw-legs-a { animation: cw-step .5s steps(1) infinite; }
+.cw-legs-b { animation: cw-step .5s steps(1) infinite reverse; }
+@keyframes cw-bob { 50% { transform: translateY(-2px); } }
+@keyframes cw-step { 0% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes cw-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.clawd-walker.is-paused .cw-art, .clawd-walker.is-paused .cw-legs-a, .clawd-walker.is-paused .cw-legs-b,
+.clawd-walker.is-still .cw-art, .clawd-walker.is-still .cw-legs-a, .clawd-walker.is-still .cw-legs-b { animation: none; }
+
+/* Bong bóng thoại (chỉ trên màn hình rộng): mặc định bên phải chú cua, sang trái khi chú ở nửa phải màn hình */
+.cw-bubble { position: absolute; top: 4px; left: calc(100% + 10px); white-space: nowrap; padding: 7px 12px; border-radius: 14px; background: #0068FF; color: #fff; font: 600 .85rem/1.2 "Be Vietnam Pro", system-ui, sans-serif; box-shadow: 0 6px 16px -6px rgba(0,104,255,.6); pointer-events: none; }
+.cw-bubble::after { content: ""; position: absolute; top: 12px; left: -6px; border: 6px solid transparent; border-left: 0; border-right-color: #0068FF; }
+.clawd-walker.is-right .cw-bubble { left: auto; right: calc(100% + 10px); }
+.clawd-walker.is-right .cw-bubble::after { left: auto; right: -6px; border-right: 0; border-left: 6px solid #0068FF; }
+.clawd-walker.is-paused .cw-bubble { background: #0052CC; }
+@media (max-width: 699px) { .cw-bubble { display: none; } .clawd-walker { width: 56px; height: 64px; } }

@@ -1,4 +1,5 @@
 /* Trang /lich (dùng chung token, thanh trên cùng, nút và card của admin.css) */
+@import "../components/clawd-walker.css";
 .wrap.narrow { max-width: 860px; padding-bottom: 32px; }
 
 /* Kiểm tra thông tin: ô nhập dùng .fld của admin.css */
@@ -48,3 +49,6 @@
 @keyframes clawd-peek { 0%, 100% { transform: translateY(14px); } 18%, 70% { transform: translateY(0); } 40% { transform: translateY(0) rotate(-4deg); } 52% { transform: translateY(0) rotate(3deg); } }
 @keyframes clawd-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
 @media (prefers-reduced-motion: reduce) { .clawd, .clawd-eyes { animation: none; } }
+/* Khi đã có Clawd đội biển Zalo bò quanh màn hình thì không cần chú ló đầu nữa */
+.sched-wrap.has-walker { margin-top: 18px; }
+.sched-wrap.has-walker .clawd { display: none; }
