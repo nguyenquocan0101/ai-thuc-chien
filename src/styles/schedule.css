@@ -36,6 +36,14 @@
 .sched-topic { font-weight: 600; font-size: 1.02rem; line-height: 1.4; color: var(--ink); margin-top: 2px !important; }
 .sched-room { margin-top: 4px !important; font-size: .9rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .sched-room::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--orange); }
+.sched-attendance-line { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 9px !important; font-size: .78rem; }
+.sched-attendance-label { color: var(--muted); }
+.sched-attendance { display: inline-flex; align-items: center; min-height: 23px; padding: 2px 9px; border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; line-height: 1.25; }
+.sched-attendance-pending { border-color: #e8e1da; background: #f8f6f3; color: #766c64; }
+.sched-attendance-open, .sched-attendance-retry { border-color: #ffd3ae; background: #fff3e8; color: #b84d08; }
+.sched-attendance-present { border-color: #b9e5c8; background: #ecf8f0; color: #247342; }
+.sched-attendance-excused { border-color: #d7c7f3; background: #f5f0fc; color: #6741a5; }
+.sched-attendance-rejected { border-color: #f0c3c3; background: #fff0f0; color: #a33a3a; }
 @media (max-width: 520px) { .sched { padding: 4px 16px; } .sched-row { grid-template-columns: 54px 1fr; gap: 12px; } }
 
 /* Clawd ló đầu sau mép trên của khung lịch: thò lên, thụt xuống, chớp mắt */

@@ -62,7 +62,7 @@ Cài đặt một lần trên Firebase Console (CLI không làm được):
 1. **Authentication → Get started → Sign-in method → Google → Enable** (trang admin đăng nhập bằng Google).
 2. **Authentication → Settings → Authorized domains**: thêm `ai-thuc-chien-ashen.vercel.app` (và tên miền riêng nếu có). `localhost` đã có sẵn.
 
-Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: dùng Firebase Emulator (xem mục bên dưới), mở trang kèm `?emu`.
+Chạy thử đăng nhập và trang `/lich` không đụng dữ liệu thật: dùng Firebase Emulator (xem mục bên dưới).
 
 ## Đăng ký lịch học
 
@@ -80,8 +80,8 @@ Dữ liệu nằm ở `students/{email}` (`classId` là `modern` hoặc `harness
 
 Chạy thử không đụng dữ liệu thật bằng Firebase Emulator:
 
-1. Chạy `npx firebase-tools emulators:start --only auth,firestore` ở thư mục gốc repo. Cổng 9099 (auth) và 8181 (firestore) đã khai báo trong `firebase.json`.
-2. Chạy `npm run dev` rồi mở trang kèm `?emu`, ví dụ `/admin/?emu` hoặc `/lich/?emu`.
+1. Chạy `npm run emulators` ở thư mục gốc repo. Cổng 9099 (auth) và 8181 (firestore) đã khai báo trong `firebase.json`.
+2. Chạy `npm run dev` rồi mở `/admin/` hoặc `/lich/`.
 
 ## Đồng bộ sang Google Sheet
 
@@ -110,3 +110,15 @@ Lưu ý:
 
 - firebase (npm), three.js r128 (cdnjs), @real-human/liquid-glass 1.2.0 (jsdelivr)
 - Logo công nghệ: Simple Icons 13.21.0 (CC0)
+
+## Firebase Emulator (dev)
+
+`npm run seed:emulator` also pre-creates the admin and student mock Google identities in Auth Emulator, so they appear in its account picker.
+
+`npm run dev` luôn kết nối Auth và Firestore emulator local. Chạy `npm run emulators` để khởi động; dữ liệu emulator được lưu trong `.emulator-data/` (đã thêm vào Git ignore).
+
+Để phát triển mà không cần quyền đọc cloud, chạy `npm run seed:emulator`. Lệnh này chỉ ghi dữ liệu giả vào emulator loopback; tên, MSSV và email `example.test` đều là dữ liệu tổng hợp. Seed gồm email-keyed và legacy registrations, sinh viên đã/chưa xác nhận hồ sơ, lớp Modern AI/Harness/chưa xếp, registrations chờ nhập, availability mẫu, cùng 6 buổi của mỗi lớp.
+
+Trong dev, cả `/admin/` và `/lich/` có nút đăng nhập nhanh cho hai role: admin `phuonglhk@gmail.com` và sinh viên `linh.nguyen@example.test`. Tài khoản sinh viên mẫu khác gồm `an.pham@example.test` (cần xác nhận, chưa xếp lớp) và `mai.dinh@example.test` (thiếu MSSV, Modern AI). Firestore profile của mỗi tài khoản nằm ở `students/{email}`; dự án hiện không có collection `accounts` riêng.
+
+Tài khoản có email admin đăng nhập từ `/lich/` sẽ tự chuyển sang `/admin/`.

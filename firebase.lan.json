@@ -1,0 +1,20 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-southeast1",
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "auth": {
+      "host": "192.168.1.3",
+      "port": 9099
+    },
+    "firestore": {
+      "host": "192.168.1.3",
+      "port": 8181
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

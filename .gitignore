@@ -2,5 +2,8 @@
 node_modules/
 dist/
 .firebase/
+.emulator-data/
+.env.local
+.env.*.local
 *-debug.log
 .playwright-mcp/

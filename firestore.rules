@@ -121,5 +121,107 @@ service cloud.firestore {
         && request.resource.data.sessionIds.size() <= 60
         && request.resource.data.updatedAt == request.time);
     }
+
+    function myStudentClass() {
+      return get(/databases/$(database)/documents/students/$(myEmail())).data.classId;
+    }
+
+    function validAttendanceResult(d) {
+      let config = get(/databases/$(database)/documents/attendance/config).data;
+      return d.gpsResult in ['inside', 'outside', 'poor_accuracy', 'unavailable']
+        && ((d.gpsResult == 'inside' && d.status == 'present'
+          && (d.accuracyMeters is int || d.accuracyMeters is float) && d.accuracyMeters <= config.accuracyThresholdMeters)
+          || (d.gpsResult != 'inside' && d.status == 'rejected'))
+        && (d.accuracyMeters == null || ((d.accuracyMeters is int || d.accuracyMeters is float) && d.accuracyMeters >= 0 && d.accuracyMeters <= 10000));
+    }
+
+    function validCurrentAttendanceQr(d) {
+      let sessionPath = /databases/$(database)/documents/attendanceSessions/$(d.sessionId);
+      let currentPath = /databases/$(database)/documents/attendance/current;
+      return exists(sessionPath)
+        && get(sessionPath).data.classId == myStudentClass()
+        && exists(currentPath)
+        && get(currentPath).data.active == true
+        && get(currentPath).data.sessionId == d.sessionId
+        && get(currentPath).data.classId == myStudentClass()
+        && get(currentPath).data.currentToken == d.token
+        && get(currentPath).data.tokenExpiresAt > request.time;
+    }
+
+    function validAdminAttendanceReview() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewReason', 'reviewedBy', 'reviewedAt', 'retryAllowed'])
+        && request.resource.data.status in ['present', 'rejected', 'excused']
+        && request.resource.data.reviewReason is string && request.resource.data.reviewReason.size() >= 5 && request.resource.data.reviewReason.size() <= 500
+        && request.resource.data.reviewedBy == request.auth.token.email.lower()
+        && request.resource.data.reviewedAt == request.time
+        && request.resource.data.retryAllowed == false;
+    }
+
+    function validAdminRetryGrant() {
+      return resource.data.status == 'rejected'
+        && resource.data.retryAllowed != true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['retryAllowed', 'retryReason', 'retryAllowedBy', 'retryAllowedAt', 'attemptCount', 'retryHistory'])
+        && request.resource.data.retryAllowed == true
+        && request.resource.data.retryReason is string && request.resource.data.retryReason.size() >= 5 && request.resource.data.retryReason.size() <= 500
+        && request.resource.data.retryAllowedBy == request.auth.token.email.lower()
+        && request.resource.data.retryAllowedAt == request.time
+        && request.resource.data.attemptCount is int && request.resource.data.attemptCount >= 1 && request.resource.data.attemptCount <= 50
+        && request.resource.data.retryHistory is list && request.resource.data.retryHistory.size() >= 1 && request.resource.data.retryHistory.size() <= 50;
+    }
+
+    match /attendance/{docId} {
+      allow get: if isAdmin() || (docId == 'config' && isListed())
+        || (docId == 'current' && isListed()
+          && (!exists(/databases/$(database)/documents/attendance/current)
+            || resource.data.classId == myStudentClass()));
+      allow list: if false;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /attendanceSessions/{sessionId} {
+      allow get: if isAdmin() || (isListed() && resource.data.classId == myStudentClass());
+      allow list: if isAdmin() || (isListed() && resource.data.classId == myStudentClass());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /attendanceRecords/{recordId} {
+      allow get: if isAdmin() || (isListed()
+        && recordId.split('_').size() == 2 && recordId.split('_')[1] == myEmail());
+      allow list: if isAdmin() || (isListed()
+        && resource.data.classId == myStudentClass()
+        && resource.data.studentEmail == myEmail());
+      allow create: if isListed()
+        && request.resource.data.keys().hasOnly(['sessionId', 'classId', 'studentEmail', 'studentName', 'status', 'gpsResult', 'accuracyMeters', 'token', 'submittedAt', 'attemptCount'])
+        && request.resource.data.keys().hasAll(['sessionId', 'classId', 'studentEmail', 'studentName', 'status', 'gpsResult', 'accuracyMeters', 'token', 'submittedAt', 'attemptCount'])
+        && request.resource.data.sessionId is string
+        && request.resource.data.classId == myStudentClass()
+        && request.resource.data.studentEmail == myEmail()
+        && request.resource.data.studentName is string && request.resource.data.studentName.size() <= 120
+        && request.resource.data.status in ['present', 'rejected']
+        && validAttendanceResult(request.resource.data)
+        && request.resource.data.attemptCount == 1
+        && request.resource.data.token is string && request.resource.data.token.size() >= 16
+        && request.resource.data.submittedAt == request.time
+        && recordId == request.resource.data.sessionId + '_' + myEmail()
+        && validCurrentAttendanceQr(request.resource.data);
+      allow update: if (isAdmin() && validAdminAttendanceReview())
+        || (isAdmin() && validAdminRetryGrant())
+        || (isListed()
+          && resource.data.retryAllowed == true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'gpsResult', 'accuracyMeters', 'token', 'submittedAt', 'retryAllowed', 'attemptCount'])
+          && request.resource.data.retryAllowed == false
+          && request.resource.data.attemptCount == resource.data.attemptCount + 1
+          && request.resource.data.attemptCount <= 50
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.classId == myStudentClass()
+          && request.resource.data.studentEmail == myEmail()
+          && request.resource.data.status in ['present', 'rejected']
+          && validAttendanceResult(request.resource.data)
+          && request.resource.data.token is string && request.resource.data.token.size() >= 16
+          && request.resource.data.submittedAt == request.time
+          && recordId == request.resource.data.sessionId + '_' + myEmail()
+          && validCurrentAttendanceQr(request.resource.data));
+      allow delete: if isAdmin();
+    }
   }
 }

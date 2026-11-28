@@ -1,4 +1,4 @@
-import { signInWithGoogle, signOutUser, onUserChange, watchRegistrations } from "./lib/firebase.js";
+import { signInWithGoogle, signInWithDemoRole, signOutUser, onUserChange, watchRegistrations } from "./lib/firebase.js";
 import { isAdminEmail } from "./lib/admins.js";
 import { enhanceSelects } from "./components/dropdown.js";
 import { createSidebar } from "./components/sidebar.js";
@@ -11,7 +11,8 @@ const $ = id => document.getElementById(id);
 const views = ["vLoading", "vLogin", "vDenied", "vList"];
 const showView = id => views.forEach(v => { $(v).hidden = v !== id; });
 
-let all = [], stopWatch = null, stopSchedule = null;
+let all = [], stopWatch = null, stopSchedule = null, stopAttendance = null;
+let adminUser = null, attendanceLoad = 0;
 
 const toDate = ts => (ts && typeof ts.toDate === "function" ? ts.toDate() : null);
 const fmtDate = ts => { const d = toDate(ts); return d ? d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" }) : "—"; };
@@ -24,14 +25,20 @@ enhanceSelects();
 const ICONS = {
   list: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
-  layers: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>'
+  layers: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  check: '<path d="M20 6 9 17l-5-5"/><circle cx="12" cy="12" r="10"/>'
 };
 const NAV_ITEMS = [
   { id: "dang-ky", label: "Đăng ký", panel: "pDangKy", icon: ICONS.list },
   { id: "sinh-vien", label: "Sinh viên", panel: "pSinhVien", icon: ICONS.users },
-  { id: "lop", label: "Lớp", panel: "pLop", icon: ICONS.layers }
+  { id: "lop", label: "Lớp", panel: "pLop", icon: ICONS.layers },
+  { id: "diem-danh", label: "Điểm danh", panel: "pDiemDanh", icon: ICONS.check }
 ];
-const nav = createSidebar({ label: "Mục quản trị", items: NAV_ITEMS });
+const nav = createSidebar({
+  label: "Mục quản trị",
+  items: NAV_ITEMS,
+  onChange: id => { if (id === "diem-danh") loadAttendancePanel(); }
+});
 $("sidebarSlot").replaceWith(nav.el);
 
 // Đầu trang của từng mục: breadcrumb Quản trị / khoá / mục, tiêu đề (data-title), dòng tóm tắt [data-meta] và nút [data-actions]
@@ -78,7 +85,8 @@ function exportCsv() {
   downloadCsv("dang-ky-ai-thuc-chien", head, lines);
 }
 
-function startWatch() {
+function startWatch(user) {
+  adminUser = user;
   $("listErr").textContent = "";
   stopWatch = watchRegistrations(rows => { all = rows; render(); nav.setBadge("dang-ky", String(rows.length)); }, err => {
     console.error(err);
@@ -87,17 +95,30 @@ function startWatch() {
       : "Không tải được dữ liệu: " + err.message;
   });
   stopSchedule = startSchedule({ majors: MAJORS, registrations: () => all, setBadge: nav.setBadge, select: nav.select });
+  if (nav.current === "diem-danh") loadAttendancePanel();
+}
+
+function loadAttendancePanel() {
+  if (!adminUser || stopAttendance) return;
+  const load = ++attendanceLoad;
+  import("./scripts/admin-attendance.js").then(({ startAttendanceAdmin }) => {
+    if (load === attendanceLoad && adminUser && !stopAttendance) stopAttendance = startAttendanceAdmin(adminUser);
+  }).catch(e => { $("attendanceErr").textContent = `Không mở được chức năng điểm danh: ${e.message}`; });
 }
 
 onUserChange(user => {
   if (stopWatch) { stopWatch(); stopWatch = null; }
   if (stopSchedule) { stopSchedule(); stopSchedule = null; }
+  adminUser = null;
+  attendanceLoad++;
+  if (stopAttendance) { stopAttendance(); stopAttendance = null; }
   $("who").hidden = !user;
   if (!user) { showView("vLogin"); return; }
   $("whoMail").textContent = user.email;
   if (!isAdminEmail(user.email)) { $("deniedMail").textContent = user.email; showView("vDenied"); return; }
+  adminUser = user;
   showView("vList");
-  startWatch();
+  startWatch(user);
 });
 
 $("signInBtn").addEventListener("click", async () => {
@@ -105,6 +126,16 @@ $("signInBtn").addEventListener("click", async () => {
   try { await signInWithGoogle(); }
   catch (e) { if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") $("loginErr").textContent = "Đăng nhập chưa thành công: " + (e.code || e.message); }
 });
+if (import.meta.env.DEV) {
+  $("demoLoginButtons").hidden = false;
+  [["demoAdminBtn", "admin"], ["demoStudentBtn", "student"]].forEach(([id, role]) => {
+    $(id).addEventListener("click", async () => {
+      $("loginErr").textContent = "";
+      try { await signInWithDemoRole(role); }
+      catch (e) { $("loginErr").textContent = "Đăng nhập demo chưa thành công: " + (e.code || e.message); }
+    });
+  });
+}
 // Open the popup straight from the click (an await before it would trip popup blockers); select_account lets them pick another account
 $("switchBtn").addEventListener("click", () => signInWithGoogle().catch(e => console.warn(e.code || e)));
 $("signOutBtn").addEventListener("click", () => signOutUser());

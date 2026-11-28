@@ -31,6 +31,11 @@
     <h1>Lịch học</h1>
     <p class="muted">Đăng nhập bằng đúng tài khoản Google bạn đã dùng khi đăng ký AI Thực Chiến (Gmail hoặc email @fpt.edu.vn).</p>
     <button class="btn btn-primary" type="button" id="signInBtn">Đăng nhập với Google</button>
+    <div id="demoLoginButtons" hidden>
+      <p class="muted">Đăng nhập nhanh chỉ dùng được trong môi trường dev.</p>
+      <button class="btn btn-ghost" type="button" id="demoAdminBtn">Đăng nhập nhanh · Quản trị</button>
+      <button class="btn btn-ghost" type="button" id="demoStudentBtn">Đăng nhập nhanh · Sinh viên</button>
+    </div>
     <p class="err" id="loginErr" role="alert"></p>
   </section>
 
@@ -66,6 +71,32 @@
     </div>
     <h1 id="mainTitle"></h1>
     <p class="muted lead" id="mainSub"></p>
+    <section class="attendance-student card" id="studentAttendance" hidden>
+      <div class="attendance-student-head">
+        <div><p class="eyebrow">ĐIỂM DANH TRÊN LỚP</p><h2 id="studentAttendanceTitle">Chưa có phiên điểm danh</h2><p class="muted" id="studentAttendanceInfo"></p></div>
+        <button class="btn btn-primary" id="scanAttendanceBtn" type="button" hidden>Quét QR điểm danh</button>
+      </div>
+      <p class="err" id="studentAttendanceErr" role="alert"></p>
+      <p class="attendance-result" id="studentAttendanceResult" aria-live="polite"></p>
+      <div class="attendance-camera" id="attendanceCamera" hidden>
+        <div class="camera-header">
+          <div><p class="camera-kicker">QUÉT MÃ TẠI LỚP</p><h3>Đưa QR vào khung</h3></div>
+          <button class="camera-close" id="stopAttendanceScan" type="button" aria-label="Đóng camera">×</button>
+        </div>
+        <div class="camera-stage">
+          <video id="attendanceVideo" playsinline muted></video>
+          <div class="camera-overlay" aria-hidden="true">
+            <div class="camera-frame">
+              <i class="camera-corner corner-tl"></i><i class="camera-corner corner-tr"></i>
+              <i class="camera-corner corner-bl"></i><i class="camera-corner corner-br"></i>
+              <i class="camera-laser"></i>
+            </div>
+          </div>
+          <p class="camera-hint">Căn mã QR trong ô vuông, giữ điện thoại ổn định</p>
+        </div>
+        <p class="camera-footnote">Đang dùng camera sau · Không chụp hoặc lưu hình ảnh</p>
+      </div>
+    </section>
     <div class="sched-wrap" id="schedWrap" hidden>
       <!-- Clawd, chú cua pixel của Claude Code (cùng tỉ lệ khối với model 3D trên trang chủ), ló đầu sau khung lịch -->
       <svg class="clawd" viewBox="0 0 11 8" shape-rendering="crispEdges" aria-hidden="true">

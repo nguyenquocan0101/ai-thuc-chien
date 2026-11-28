@@ -30,6 +30,11 @@
     <h1>Danh sách đăng ký</h1>
     <p class="muted">Đăng nhập bằng tài khoản Google của ban tổ chức để xem sinh viên đã đăng ký.</p>
     <button class="btn btn-primary" type="button" id="signInBtn">Đăng nhập với Google</button>
+    <div id="demoLoginButtons" hidden>
+      <p class="muted">Đăng nhập nhanh chỉ dùng được trong môi trường dev.</p>
+      <button class="btn btn-ghost" type="button" id="demoAdminBtn">Đăng nhập nhanh · Quản trị</button>
+      <button class="btn btn-ghost" type="button" id="demoStudentBtn">Đăng nhập nhanh · Sinh viên</button>
+    </div>
     <p class="err" id="loginErr" role="alert"></p>
   </section>
 
@@ -127,6 +132,95 @@
     <div class="panel-page" id="pLop" data-title="Lớp học" hidden>
       <p class="muted" id="classMeta" data-meta></p>
       <div id="classCards"></div>
+    </div>
+
+    <div class="panel-page" id="pDiemDanh" data-title="Điểm danh" hidden>
+      <p class="muted" id="attendanceMeta" data-meta>Chọn lớp và buổi học để mở phiên. Mỗi thời điểm chỉ có một phiên điểm danh đang chạy.</p>
+      <section class="attendance-card">
+        <h2>Mở phiên điểm danh</h2>
+        <div class="tools attendance-tools">
+          <select id="attendanceClass" aria-label="Lớp học"></select>
+          <select id="attendanceSession" aria-label="Buổi học"></select>
+          <button class="btn btn-primary" id="attendanceStart" type="button">Bắt đầu</button>
+          <button class="btn btn-danger" id="attendanceEnd" type="button" disabled>Kết thúc</button>
+        </div>
+        <p class="err" id="attendanceErr" role="alert"></p>
+        <div class="attendance-live" id="attendanceLive" hidden>
+          <div>
+            <h3 id="attendanceLiveTitle"></h3>
+            <p class="muted" id="attendanceLiveInfo"></p>
+            <p class="mono" id="attendanceCountdown"></p>
+            <p class="muted">Mã QR đổi mỗi phút, mã cũ hết hạn ngay khi thay.</p>
+          </div>
+          <button class="attendance-qr-trigger" id="attendanceQrOpen" type="button" aria-haspopup="dialog" aria-label="Phóng to mã QR điểm danh">
+            <img id="attendanceQr" alt="Mã QR điểm danh đang hoạt động">
+            <span>Nhấn để phóng to</span>
+          </button>
+        </div>
+      </section>
+
+      <dialog class="attendance-qr-dialog" id="attendanceQrDialog" aria-labelledby="attendanceQrDialogTitle">
+        <div class="attendance-qr-shell">
+          <header class="attendance-qr-topbar">
+            <a class="brand" href="/">AI Thực Chiến <span>· ĐIỂM DANH</span></a>
+            <button class="attendance-qr-close" id="attendanceQrClose" type="button" aria-label="Đóng mã QR">×</button>
+          </header>
+          <main class="attendance-qr-content">
+            <div class="attendance-qr-live"><i></i> PHIÊN ĐANG HOẠT ĐỘNG</div>
+            <p class="attendance-qr-kicker" id="attendanceQrClass"></p>
+            <h2 id="attendanceQrDialogTitle"></h2>
+            <p class="attendance-qr-meta" id="attendanceQrInfo"></p>
+            <div class="attendance-qr-code"><img id="attendanceQrFullscreen" alt="Mã QR điểm danh toàn màn hình"></div>
+            <p class="attendance-qr-countdown" id="attendanceQrCountdown"></p>
+            <p class="attendance-qr-hint">Sinh viên mở camera trên trang lịch học và quét mã này tại lớp.</p>
+          </main>
+          <footer class="attendance-qr-footer">Mã QR tự đổi sau mỗi phút · Mã cũ hết hiệu lực ngay khi đổi</footer>
+        </div>
+      </dialog>
+
+      <section class="attendance-card">
+        <h2>Phạm vi GPS của khuôn viên</h2>
+        <p class="muted">Bấm lên bản đồ để đặt tâm, hoặc kéo điểm tâm. Tọa độ thiết bị sinh viên không được lưu.</p>
+        <p class="err" id="mapErr" role="alert"></p>
+        <div id="geofenceMap" class="geofence-map" aria-label="Bản đồ cấu hình khu vực GPS"></div>
+        <div class="form-grid geofence-fields">
+          <label class="fld">Bán kính khuôn viên (m)<input id="geofenceRadius" type="number" min="1" max="50000" step="1" inputmode="numeric"></label>
+          <label class="fld">Sai số GPS tối đa (m)<input id="geofenceAccuracy" type="number" min="1" max="1000" step="1" inputmode="numeric"></label>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="geofenceLocate" type="button">Đặt tâm tại vị trí thiết bị</button>
+          <button class="btn btn-primary" id="geofenceSave" type="button">Lưu cấu hình GPS</button>
+        </div>
+      </section>
+
+      <section class="attendance-card">
+        <h2>Bản ghi của buổi đang chọn</h2>
+        <p class="muted" id="attendanceRecordsMeta">Chọn buổi học đã có phiên để xem bản ghi.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sinh viên</th><th>Email</th><th>Kết quả</th><th>Sai số GPS</th><th>Ghi nhận lúc</th><th></th></tr></thead>
+            <tbody id="attendanceRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <dialog class="modal modal-sm attendance-reason-dialog" id="attendanceReasonDialog" aria-labelledby="attendanceReasonTitle" aria-describedby="attendanceReasonDescription">
+        <form id="attendanceReasonForm" novalidate>
+          <div class="attendance-reason-mark" aria-hidden="true">!</div>
+          <div class="modal-head attendance-reason-head">
+            <div><p class="camera-kicker">GHI NHẬN QUẢN TRỊ</p><h2 id="attendanceReasonTitle">Nhập lý do</h2></div>
+            <button class="camera-close attendance-reason-close" type="button" data-close aria-label="Đóng">×</button>
+          </div>
+          <p class="modal-msg" id="attendanceReasonDescription"></p>
+          <label class="fld attendance-reason-label" for="attendanceReasonInput">Lý do <span>Bắt buộc</span></label>
+          <textarea id="attendanceReasonInput" rows="4" maxlength="500" placeholder="Nhập lý do, tối thiểu 5 ký tự"></textarea>
+          <p class="err attendance-reason-error" id="attendanceReasonError" role="alert"></p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" type="button" data-close>Hủy</button>
+            <button class="btn btn-primary" id="attendanceReasonSubmit" type="submit">Xác nhận</button>
+          </div>
+        </form>
+      </dialog>
     </div>
     </div>
   </section>
